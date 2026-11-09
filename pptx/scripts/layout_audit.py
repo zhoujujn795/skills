@@ -9,7 +9,7 @@ Checks for:
 3. Text density overload (character count per slide exceeding academic readability thresholds).
 4. Micro-fonts (< 12pt on main slides, < 10.5pt in tables/appendix, excluding superscripts/subscripts/footers).
 5. Shape-to-shape / table-to-shape bounding-box collisions.
-6. "AI Card-Stacking" anti-pattern (> 28 shapes on a single slide or < 35% slides having visual figures).
+6. "AI Card-Stacking" anti-pattern (> 14 shapes on a single slide or < 35% slides having visual figures).
 
 Usage:
     python3 scripts/layout_audit.py path/to/deck.pptx [--strict]
@@ -32,6 +32,20 @@ A_T = f"{{{NS['a']}}}t"
 A_RPR = f"{{{NS['a']}}}rPr"
 A_P = f"{{{NS['a']}}}p"
 A_SRGB = f"{{{NS['a']}}}srgbClr"
+A_LATIN = f"{{{NS['a']}}}latin"
+A_EA = f"{{{NS['a']}}}ea"
+A_PPR = f"{{{NS['a']}}}pPr"
+A_BODYPR = f"{{{NS['a']}}}bodyPr"
+
+# Fonts that exist on both Windows and macOS Office installs (or have a defined fallback).
+LATIN_FONTS_OK = {"Arial", "Calibri", "Helvetica", "Helvetica Neue", "Times New Roman", "Cambria", "Consolas", "Courier New"}
+CJK_FONTS_OK = {"Microsoft YaHei", "微软雅黑", "PingFang SC", "苹方-简", "SimSun", "宋体", "SimHei", "黑体", "Songti SC"}
+MAX_FONT_FAMILIES = 3          # Latin + CJK + (optional) monospace
+MAX_CHROMATIC_HUES = 2         # one primary + one accent
+CHAR_LIMIT_MAIN = 380
+CHAR_LIMIT_BACKUP = 600
+OVERFLOW_TOLERANCE = 1.05      # fail when estimated text height exceeds box height by >5%
+LATIN_EM = 0.58                # conservative average Latin glyph width (Arial regular ~0.52, bold ~0.58)
 
 EMU_PER_INCH = 914400.0
 
@@ -47,8 +61,8 @@ def hex_to_hsv(hex_str: str):
 
 
 def em_width(text: str) -> float:
-    """Estimate visual width in ems (CJK = 1.0 em, ASCII/Latin = 0.55 em)."""
-    return sum(1.0 if ord(c) > 127 else 0.55 for c in text)
+    """Estimate visual width in ems (CJK = 1.0 em, Latin = LATIN_EM em)."""
+    return sum(1.0 if ord(c) > 0x2E7F else (LATIN_EM if ord(c) > 32 else 0.3) for c in text)
 
 
 def rect_overlap(a, b, tol=0.06):
@@ -101,7 +115,7 @@ def audit_pptx(pptx_path: Path) -> int:
             is_backup = bool(re.search(r"\[Backup|附录\s*A", full_slide_text))
 
             total_chars = sum(len(t.strip()) for t in all_texts)
-            char_limit = 650 if is_backup else 420
+            char_limit = CHAR_LIMIT_BACKUP if is_backup else CHAR_LIMIT_MAIN
             if total_chars > char_limit:
                 errors.append(
                     f"Slide {idx:02d}: Text overload ({total_chars} chars > max {char_limit}). "
@@ -120,7 +134,7 @@ def audit_pptx(pptx_path: Path) -> int:
             if len(shapes) > 14:
                 errors.append(
                     f"Slide {idx:02d}: Too many shapes ({len(shapes)} > 14). "
-                    f"Minimalist monochromatic style forbids boxed cards, numbered badges, section pills, or bottom warning bars."
+                    f"The minimalist academic style forbids boxed cards, numbered badges, section pills, or bottom warning bars."
                 )
 
             # Check monochromatic palette across slide shapes (excluding embedded pictures)
@@ -132,10 +146,38 @@ def audit_pptx(pptx_path: Path) -> int:
                     # If saturation > 0.22 and value > 0.20, it's a chromatic color (not gray/black/white)
                     if s_val > 0.22 and v_val > 0.20:
                         hue_buckets.add(int(round(h_val * 12)) % 12)
-            if len(hue_buckets) > 1:
+            if len(hue_buckets) > MAX_CHROMATIC_HUES:
                 errors.append(
-                    f"Slide {idx:02d}: Multi-color violation ({len(hue_buckets)} distinct chromatic hues found on shapes/text). "
-                    f"Use strictly ONE monochromatic hue family + neutral grays/blacks on white background."
+                    f"Slide {idx:02d}: Too many colors ({len(hue_buckets)} distinct chromatic hues on shapes/text; max {MAX_CHROMATIC_HUES}). "
+                    f"Use one primary hue + one accent hue + neutral grays on white background."
+                )
+
+            # Font checks: only approved cross-platform families, and CJK text must name an East Asian font.
+            latin_used, ea_used = set(), set()
+            for el in root.iter(A_LATIN):
+                tf = el.attrib.get("typeface", "")
+                if tf and not tf.startswith("+"):
+                    latin_used.add(tf)
+            for el in root.iter(A_EA):
+                tf = el.attrib.get("typeface", "")
+                if tf and not tf.startswith("+"):
+                    ea_used.add(tf)
+            bad_fonts = sorted(f for f in latin_used if f not in LATIN_FONTS_OK | CJK_FONTS_OK)
+            bad_fonts += sorted(f for f in ea_used if f not in CJK_FONTS_OK | LATIN_FONTS_OK)
+            if bad_fonts:
+                errors.append(
+                    f"Slide {idx:02d}: Font(s) not available on both Windows and macOS: {', '.join(sorted(set(bad_fonts)))}. "
+                    f"Use Arial/Calibri for Latin and Microsoft YaHei (or PingFang SC) for Chinese."
+                )
+            if len(latin_used | ea_used) > MAX_FONT_FAMILIES:
+                errors.append(
+                    f"Slide {idx:02d}: Too many font families ({len(latin_used | ea_used)} > {MAX_FONT_FAMILIES})."
+                )
+            has_cjk = any(ord(c) > 0x2E7F for c in full_slide_text)
+            if has_cjk and not ea_used:
+                warnings.append(
+                    f"Slide {idx:02d}: Chinese text but no East Asian font (a:ea) set; PowerPoint will pick a default that "
+                    f"differs between Windows and macOS and may reflow. Set an explicit CJK font."
                 )
 
             text_boxes = []
@@ -157,6 +199,12 @@ def audit_pptx(pptx_path: Path) -> int:
                 est_h = 0.0
                 box_texts = []
 
+                bpr = sp.find(".//a:bodyPr", NS)
+                def _inset(attr, default=91440):
+                    return (int(bpr.attrib.get(attr, default)) if bpr is not None else default) / EMU_PER_INCH
+                inset_w = _inset("lIns") + _inset("rIns")
+                inset_h = _inset("tIns", 45720) + _inset("bIns", 45720)
+
                 for p in paras:
                     ptxt = "".join(t.text for t in p.iter(A_T) if t.text)
                     box_texts.append(ptxt)
@@ -170,15 +218,25 @@ def audit_pptx(pptx_path: Path) -> int:
                     if y < slide_h - 0.65 and len(ptxt.strip()) > 4:
                         min_body_pt = min(min_body_pt, pt)
 
-                    usable_w = max(w - 0.16, 0.25)
+                    ppr = p.find("a:pPr", NS)
+                    indent_w = int(ppr.attrib.get("marL", 0)) / EMU_PER_INCH if ppr is not None else 0.0
+                    spc = 0.0
+                    if ppr is not None:
+                        for tag in ("spcBef", "spcAft"):
+                            el = ppr.find(f"a:{tag}/a:spcPts", NS)
+                            if el is not None:
+                                spc += int(el.attrib.get("val", 0)) / 100.0 / 72.0
+
+                    usable_w = max(w - inset_w - indent_w, 0.25)
                     ems_per_line = (usable_w * 72.0) / pt
                     lines = max(1, math.ceil(em_width(ptxt) / max(ems_per_line, 1.0))) if ptxt.strip() else 0.4
-                    est_h += lines * (pt * 1.35 / 72.0)
+                    est_h += lines * (pt * 1.35 / 72.0) + spc
+                est_h += inset_h
 
                 joined = " ".join(t.strip() for t in box_texts if t.strip())
                 if joined:
                     text_boxes.append((x, y, w, h, joined))
-                    if est_h > h * 1.15 and len(joined) > 8:
+                    if est_h > h * OVERFLOW_TOLERANCE and len(joined) > 8:
                         errors.append(
                             f"Slide {idx:02d}: Text box overflow at ({x:.2f}\", {y:.2f}\", {w:.2f}\"×{h:.2f}\") "
                             f"— needs ~{est_h:.2f}\" height for '{joined[:40]}...'"

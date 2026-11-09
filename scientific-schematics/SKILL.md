@@ -26,19 +26,24 @@ Scientific schematics and diagrams transform complex concepts into clear visual 
 
 **CRITICAL**: Whenever the user wants editable scientific diagrams, molecular/solvation shell schematics (e.g., $[\text{Mg(H}_2\text{O)}_6]^{2+}$, SSIP vs. CIP coordination), potential energy curves, or methodological workflow diagrams — OR when `OPENROUTER_API_KEY` is not set — **generate native, layered, hand-crafted `.svg` vector files (or standalone LaTeX `TikZ` `.tex` files)** rather than raster AI images!
 
-1. **Strict Monochromatic Academic Style for Schematics**:
-   - **Background**: Pure white (`#FFFFFF`).
-   - **Color Palette**: Use a single restrained academic slate-navy family:
-     - Primary border / key module / cation: `#1E3A5F` (deep navy)
-     - Secondary border / baseline module / solvent: `#475569` (slate gray)
-     - Subtle node fills: `#F8FAFC` (off-white) and `#EEF2F6` (light cool gray-blue)
-     - Hairline connectors & grid: `#94A3B8` / `#CBD5E1`
-     - Text: `#1F2937` (primary), `#64748B` (secondary annotations)
-   - **Typography**: `font-family="Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif"`, keeping all labels as editable `<text>` / `<tspan>` elements (use `baseline-shift="sub"` / `"super"` or Unicode sub/superscripts for chemical formulas like `Mg²⁺`, `Cl⁻`, `H₂O`, `r⁻¹²`).
-2. **SVG Structural Discipline (No Overlaps, Fully Editable in Illustrator/Inkscape/PPT)**:
-   - Always declare explicit `viewBox="0 0 W H"`, `width`, `height`, and `<defs>` with clean `<marker id="arrow" ...>` arrowheads.
-   - Group logical components with semantic IDs (`<g id="solvation-shell-cip">`, `<g id="stage-1-dft">`) so every module can be dragged and edited independently in Illustrator, Inkscape, or PowerPoint.
-   - If a `.png` is also needed for `PptxGenJS` embedding, render the SVG or generate the matching schematic via `matplotlib`/`PIL` at `300 DPI` while keeping the `.svg` source file alongside it.
+1. **Academic style: white page, one primary + one accent color**:
+   - **Background**: white (`#FFFFFF`).
+   - **Primary** `#1E3A5F` (deep navy): main modules, key borders, the main object of the figure.
+   - **Accent (one only)** `#C2410C` (burnt orange): the single thing the reader must notice (the proposed module, the key path, the result). Use it on 1–3 elements.
+   - **Neutrals**: border `#475569`, node fills `#F8FAFC` / `#EEF2F6`, connectors `#94A3B8`, grid `#CBD5E1`, text `#1F2937` and `#64748B` for annotations.
+   - Never add a third hue. If the figure needs more categories (e.g. 4 cell types), distinguish them with shape, fill pattern or line style first, and only then with Okabe-Ito colors (`#0072B2`, `#D55E00`, `#009E73`, `#E69F00`, `#56B4E9`, `#CC79A7`), which replaces the navy/orange pair for that figure.
+   - **Typography**: `font-family="Arial, 'Microsoft YaHei', 'PingFang SC', sans-serif"` (Arial and Microsoft YaHei exist on Windows; Arial and PingFang SC on macOS; the list lets each platform pick its own CJK font). Labels stay editable `<text>` / `<tspan>`. Minimum label size 11 units on a viewBox about 1000 wide (about 10 pt at final print size); use `baseline-shift="sub"` / `"super"` or Unicode sub/superscripts for formulas such as `Mg²⁺`, `Cl⁻`, `H₂O`.
+2. **SVG structural discipline**:
+   - Declare `viewBox="0 0 W H"` with `width` / `height`, and put arrowheads in `<defs>` as `<marker id="arrow">`.
+   - Group components with semantic IDs (`<g id="encoder">`) so each module can be moved in Illustrator, Inkscape or PowerPoint.
+   - Size every box from its label: box width ≥ label width + 24 units, where a Chinese character is one font-size wide and a Latin character about 0.58 font-size. Prefer wrapping a long label onto two `<tspan>` lines to widening the box.
+   - Keep ≥ 20 units between neighboring boxes and route connectors in the gaps, not through labels.
+3. **Check and render before delivering (required)**:
+   ```bash
+   python3 scripts/check_svg.py figure.svg --png figure.png
+   ```
+   It fails on a missing viewBox, text outside the canvas, overlapping labels, labels wider than their box, fonts missing on Windows or macOS, text smaller than 11 units, and more than two chromatic hues. Fix every `[FAIL]` and re-run. It then renders `figure.png` with rsvg-convert, inkscape or cairosvg if one is installed. **Open the PNG and look at it**: the check is a geometric estimate and cannot judge whether the science, arrows and layout are right.
+4. **Outputs**: keep `figure.svg` as the source. For PowerPoint use the 2400 px wide PNG (or insert the SVG directly in Microsoft 365). For journals export PDF from the SVG (`rsvg-convert -f pdf -o figure.pdf figure.svg`) and check the venue's specification.
 
 ---
 
@@ -69,9 +74,7 @@ Scientific schematics and diagrams transform complex concepts into clear visual 
 
 Save diagrams under `figures/` using `-o figures/name.png`, then inspect every label and relationship before including them in a paper or poster. The output location is the path you choose.
 
-**What the output is:** a raster PNG at whatever resolution the image model returns. This skill has
-no vector path and no DPI control — if a journal demands PDF, EPS, or 300 dpi TIFF, convert the PNG
-downstream and check the result at final print size.
+**What the AI mode outputs:** a raster PNG at whatever resolution the image model returns, with no DPI control. If a journal demands PDF, EPS, or 300 dpi TIFF, use the SVG workflow above instead, or convert the PNG downstream and check the result at final print size.
 
 ## Quick Start: Generate Any Diagram
 
@@ -162,7 +165,7 @@ For trial flows, use the [CONSORT 2025 template and item 22a](https://www.consor
 - High contrast for readability
 - Clear, readable labels (minimum 10pt)
 - Professional typography (sans-serif fonts)
-- Colorblind-friendly colors (Okabe-Ito palette)
+- Navy `#1E3A5F` plus one orange `#C2410C` accent on white; if more categories are needed, the Okabe-Ito palette
 - Proper spacing to prevent crowding
 - Scale bars, legends, axes where appropriate
 
@@ -248,9 +251,9 @@ python scripts/generate_schematic.py "diagram" -o out.png -v
 The generator includes all of these as prompt instructions by default, but naming them in your own words for the specific
 diagram works better than relying on the built-in guidelines alone.
 
-### What the pipeline cannot do
+### What the AI-generation pipeline (secondary workflow) cannot do
 
-1. **Vector output** - PNG only; no PDF, SVG, or EPS is produced
+1. **Vector output** - the AI mode produces PNG only; use the SVG workflow for vector output
 2. **Resolution control** - the image model chooses; there is no DPI flag
 3. **Color space** - RGB only; convert for CMYK print workflows downstream
 4. **Exact line weights or text sizes** - describe them in the prompt, then verify by eye

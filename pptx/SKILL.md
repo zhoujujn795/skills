@@ -24,7 +24,7 @@ Paths are relative to this skill's directory. Everything else is plain Python, `
 | `scripts/add_slide.py unpacked/ slide2.xml [--after slideN.xml]` | Duplicate a slide (or a `slideLayoutN.xml`) with all the package bookkeeping. Also takes a `.pptx` directly with `-o out.pptx` |
 | `scripts/clean.py unpacked/` | Delete slides, media, and rels no longer referenced. Run **after** `<p:sldIdLst>` is final |
 | `scripts/office/validate.py deck.pptx [--original src.pptx]` | Schema, relationship, content-type, chart and slide checks; each failure names its fix. Pass `--original` for any template-derived deck — it baselines the schema checks against the template, so the template's own XSD errors don't read as yours |
-| `scripts/layout_audit.py deck.pptx` | **MANDATORY zero-dependency layout & CJK academic density auditor** (runs with built-in macOS `python3`). Detects table vertical auto-expansion collisions, CJK text box overflow, character overload (`>420` chars/slide), micro-fonts (`<12pt`), and AI card-stacking (`>28` shapes/slide). **Must exit 0 before delivering any `.pptx`!** |
+| `scripts/layout_audit.py deck.pptx` | **MANDATORY layout auditor** (stdlib only). Fails on: text-box overflow (conservative CJK-aware estimate incl. insets and paragraph spacing), table auto-expansion collisions, >380 chars/slide (>600 backup), fonts that are not on both Windows and macOS, >3 font families, >2 chromatic hues, body font <12pt, >14 shapes. Warns if Chinese text has no East Asian font set. **Must exit 0 before delivering any `.pptx`.** |
 | `scripts/office/soffice.py --headless --convert-to pdf deck.pptx` | LibreOffice wrapper — bare `soffice` hangs in this sandbox |
 
 ## Creating with pptxgenjs — gotchas
@@ -78,61 +78,57 @@ When filling in a template:
 - Let bullets inherit from the layout; only add `<a:buChar>`, `<a:buAutoNum>` (numbered), or `<a:buNone>` to override — never a literal `•` in the text.
 - Text with leading or trailing spaces needs `xml:space="preserve"` on its `<a:t>`.
 
-## Design Rules: Monochromatic Minimalist Academic Style (单色系极简学术风)
+## Design Rules: Clean Academic Style (白底学术风)
 
-**CRITICAL OVERRIDE: Keep slides simple, clean, and strictly monochromatic.** Never create flashy marketing decks, multi-colored cards, or cluttered AI templates.
+Keep slides simple and readable. No marketing-style decks, no card stacks, no decorative badges.
 
-### 1. Strict Monochromatic Palette (严格单色系 + 纯白底)
+### 1. Color: white background, 1 primary + 1 accent
 
-- **Pure White Background Everywhere (`FFFFFF`)**: Every slide — including the Title slide and Thank-You slide — MUST use a clean white (`FFFFFF`) background. Never use dark navy/black backgrounds.
-- **Single Chromatic Hue Only**: Across all slide shapes, lines, tables, and text, use **at most ONE muted academic primary color** (plus neutral grays/blacks):
-  - **Primary Accent (Academic Slate Navy)**: `1E3A5F` (titles, key numbers, table header rule)
-  - **Light Tint (Subtle Fill, when needed)**: `F4F6F9` (very light cool gray)
-  - **Primary Text**: `1F2937` (near-black charcoal)
-  - **Secondary / Muted Text**: `6B7280` (medium gray for citations, units, footers)
-  - **Hairline Rules / Borders**: `D1D5DB` (light gray, `0.5–0.75 pt`)
-- **FORBIDDEN Colors on Slide Shapes**: Never use red, orange, yellow, green, purple, or multi-colored status boxes/pills on slides. (Scientific figures embedded as images may use colorblind-safe data palettes, or monochromatic/grayscale palettes when requested.)
+- **Background**: white (`FFFFFF`) on every slide, including title and thank-you slides.
+- **Primary (slate navy)** `1E3A5F`: titles, key lines, table header rule, main series.
+- **Accent (one only)** `C2410C` (burnt orange): the single thing you want the audience to look at: the key number, the proposed method's curve, one highlighted word. Use it sparingly, on at most 1–2 elements per slide.
+- **Neutrals**: text `1F2937`, muted text `6B7280` (citations, units, footer), rules `D1D5DB`, light fill `F4F6F9`.
+- **Never** use a third hue on shapes or text (no green/purple/yellow pills, status boxes, or rainbow bullets). The audit fails at >2 chromatic hues.
+- **Figures and charts** may use a colorblind-safe palette (Okabe-Ito: `0072B2`, `D55E00`, `009E73`, `E69F00`, `56B4E9`, `CC79A7`, `000000`). For charts with ≤3 series prefer the primary, the accent and a gray. Add a non-color cue (line style or marker) when more than 3 series share a chart. The audit reads slide XML only, so it does not check native chart colors; review those in the render.
 
-### 2. Minimalist Academic Layout (极简排版，禁止卡片堆砌)
+### 2. Layout: no card stacking
 
-- **NO Decorative Badges, Pills, or Callout Bars**:
-  - **NEVER** draw numbered square badges (`01`, `M1`, `Q0`, `L1`), top-right section pills, colored circles with icons, or bottom `!` warning banners.
-  - **NEVER** wrap bullet points inside gray/colored rounded-rectangle "cards". Write clean, left-aligned text directly on the white canvas with generous whitespace (`>= 45%` open canvas).
-- **Only 3 Clean Visual Layers per Slide**:
-  1. **Header**: Left-aligned concise title (`22–26 pt` bold, `1E3A5F`, single line `<= 26` CJK chars) at `x=0.7", y=0.45"`, optionally with a subtle subtitle or thin `0.5 pt` gray rule (`D1D5DB`).
-  2. **Body Zone (`y=1.25"` to `6.4"`)**: Choose ONE clean structure per slide:
-     - **Figure + Key Takeaways** (60% figure on left or top, 3–4 concise bullet points on right or bottom)
-     - **Academic Three-Line Table (`booktabs` style)**: Clean white cells, `1E3A5F` or `1F2937` bold header text, top rule (`1.25 pt`), mid rule (`0.75 pt`), bottom rule (`1.25 pt`), **no vertical borders and no heavy colored header fills**.
-     - **Two-Column Comparison**: Clean left/right text columns separated by whitespace (`0.6"` gap), not boxed cards.
-  3. **Minimal Footer**: Page number (`3 / 14`) in `10 pt` gray (`6B7280`) at bottom-right.
+- **No** numbered badges, section pills, colored circles with icons, or bottom warning banners.
+- **No** gray or colored rounded-rectangle "cards" around bullets. Write text directly on the white canvas with generous whitespace (≥45% open).
+- Each slide has three layers: a left-aligned **title** (26–30 pt bold, `1E3A5F`, one line, at x=0.7", y=0.45"), a **body zone** (y=1.25" to 6.4") with ONE structure (figure + 3–4 takeaways, a three-line table, or two columns), and a **footer** with page number (`3 / 14`, 10 pt, `6B7280`).
+- Three-line (booktabs) tables: top rule 1.25 pt, header rule 0.75 pt, bottom rule 1.25 pt, no vertical borders, no colored header fills.
 
-### 3. Typography & Spacing
+### 3. Fonts: must survive Windows ↔ macOS
 
-- **Safe fonts**: **Arial, Calibri, Microsoft YaHei (微软雅黑), PingFang SC**.
-- **Sizes**:
-  - Slide title: `22–26 pt` bold (`1E3A5F`)
-  - Section / column heading: `16–18 pt` bold (`1F2937`)
-  - Body bullet text: `14–16 pt` regular (`1F2937`), `paraSpaceAfter: 8–10`
-  - Table text: `12–13 pt` (`>= 11 pt` in appendix)
-  - Captions / citations / footer: `10–11 pt` (`6B7280`)
-- **Chinese (CJK) & Academic Presentation Guardrails**:
-  1. **Table Auto-Expansion Trap (`addTable`)**: PowerPoint ignores the `h` property on `addTable()` as a maximum cap and automatically expands rows downward whenever cell text wraps. **NEVER place a large figure (`h > 2.5"`) AND a multi-row table (`> 4` rows) on the same slide.** Always keep main-slide tables `<= 6 rows × 6 cols` with `fontSize >= 12`, and verify `table_y + estimated_wrapped_height <= 6.3"`.
-  2. **Slide Character Budget (`<= 380` chars on main slides)**: Never dump a full Markdown/Word research report onto slides at `9.5–11pt`. Keep main slides `<= 380` characters (`<= 600` for Backup slides) and body text `>= 14pt`. Put full paragraph explanations, methodological derivations, and file paths into **`slide.addNotes("...")`**.
-  3. **No Shape Clutter (`<= 12` shapes/slide)**: Because you are not drawing boxed cards or badges, a clean slide should have **at most 6–12 shapes total** (title, body text box, optional takeaway line, footer).
+The deck is opened on both Windows and macOS, so **the font must exist on both or the layout will reflow and overflow.**
+
+- **Latin and digits**: `Arial` (or `Calibri` if the audience uses only Microsoft Office). Not Helvetica Neue, not Segoe UI, not Source Han.
+- **Chinese**: `Microsoft YaHei` on Windows, `PingFang SC` on macOS. A run has one `a:ea` typeface, so pick the one matching where the talk is given, or set `Microsoft YaHei` and check the deck once on the other platform (it may be substituted there); in both cases **leave ≥15% width slack** in every text box.
+- **pptxgenjs**: `fontFace` sets the Latin typeface. After generating, confirm the XML also carries an `a:ea` typeface for Chinese runs (`unzip -p deck.pptx ppt/slides/slide1.xml | grep -o '<a:ea[^>]*>' | sort | uniq -c`). If it is missing, add `<a:ea typeface="Microsoft YaHei"/>` to the run properties by post-processing; the audit warns when Chinese text has no East Asian font.
+- **At most 3 families** per deck (Latin, CJK, optional monospace for code). No decorative or serif display fonts.
+- **Sizes**: title 26–30 pt bold (one line); section heading 18–20 pt bold; body 16–18 pt (never below 14); table 12–13 pt (≥11 pt in appendix); captions/citations/footer 10–12 pt. Chart axis labels ≥12 pt.
+- **LibreOffice previews substitute fonts**, so a clean render does not prove the deck fits in PowerPoint. Trust the audit's conservative estimate and the slack above, not the preview's apparent fit.
+
+### 4. Density and overflow guardrails
+
+1. **Character budget**: ≤380 characters on main slides, ≤600 on backup slides, body text ≥14 pt (16–18 pt preferred). Put paragraphs, derivations and file paths in `slide.addNotes("...")`.
+2. **Text boxes**: size the box to the text, not the reverse. For every text box, estimate lines = ceil(characters × em-width ÷ usable width), where a Chinese character is 1 em and a Latin character is about 0.58 em, and make sure `lines × font size × 1.35` plus paragraph spacing fits the height. Do not rely on auto-shrink; it is not applied when the file is opened.
+3. **Tables**: PowerPoint ignores `h` on `addTable()` as a cap and expands rows when text wraps. Never put a large figure (h > 2.5") and a table with more than 4 rows on one slide. Keep main-slide tables ≤6 rows × 6 columns at ≥12 pt, and check `table_y + wrapped height ≤ 6.3"`.
+4. **Shapes**: aim for ≤12 shapes per slide (the audit fails at >14).
 
 ## QA (Required)
 
 Your first render usually has a few real issues — overlaps, overflow, misalignment. Find and fix those, re-render only the slides you changed, and stop.
 
-### Layout, Monochromatic Style & Academic Density QA (MANDATORY FIRST GATE)
+### Layout, Color, Font & Density QA (FIRST GATE)
 
 Run the zero-dependency layout auditor using built-in `python3` immediately after generating or editing any `.pptx`:
 
 ```bash
-python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/layout_audit.py output.pptx
+python3 scripts/layout_audit.py output.pptx   # run from this skill's directory
 ```
 
-**You are FORBIDDEN from declaring completion or uploading to Google Drive until `layout_audit.py` exits with code `0` (`Audit PASSED!`).** If it reports `[FAIL]` on any slide (multi-color violations, dark background, table expansion collision, text box overflow, `>380` chars, font `<12pt`, or `>14` shapes), fix the generator script and re-run until 0 errors remain.
+**You are FORBIDDEN from declaring completion or uploading to Google Drive until `layout_audit.py` exits with code `0` (`Audit PASSED!`).** If it reports `[FAIL]` on any slide (more than 2 chromatic hues, disallowed fonts, table expansion collision, text-box overflow, `>380` chars, font `<12pt`, or `>14` shapes), fix the generator script and re-run until 0 errors remain.
 
 ### Content QA
 

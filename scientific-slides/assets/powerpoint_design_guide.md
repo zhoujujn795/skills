@@ -171,15 +171,16 @@ markitdown template.pptx
 ### 2. Typography
 
 **Font Selection**:
-- **Primary**: Sans-serif (Arial, Calibri, Helvetica)
-- **Alternative**: Verdana, Tahoma, Trebuchet MS
-- **Avoid**: Serif fonts (harder to read on screens), decorative fonts
+- **Latin and digits**: Arial (or Calibri). Both exist on Windows and macOS.
+- **Chinese**: Microsoft YaHei (Windows) or PingFang SC (macOS); set it explicitly as the East Asian font, and leave ≥15% width slack because the other platform may substitute it.
+- **Avoid**: serif fonts for body text, decorative fonts, more than 3 font families per deck
 
 **Font Sizes**:
-- Title slide title: 44-54pt
-- Slide titles: 32-40pt
-- Body text: 24-28pt (minimum 18pt)
-- Captions: 16-20pt
+- Title slide title: 36-44pt
+- Slide titles: 26-32pt (one line)
+- Body text: 16-18pt (minimum 14pt)
+- Tables: 12-13pt
+- Captions / citations / footer: 11-12pt
 - Footer: 10-12pt
 
 **Text Formatting**:
@@ -297,8 +298,8 @@ const DESIGN = {
   },
   fonts: {
     title: { fontSize: 28, bold: true, fontFace: "Arial" },
-    heading: { fontSize: 24, bold: true, fontFace: "Arial" },
-    body: { fontSize: 15, fontFace: "Arial" },
+    heading: { fontSize: 20, bold: true, fontFace: "Arial" },
+    body: { fontSize: 17, fontFace: "Arial" },
     caption: { fontSize: 11, fontFace: "Arial" }
   },
   layout: {
@@ -547,11 +548,11 @@ python skills/scientific-slides/scripts/validate_presentation.py output.pptx --d
 
 ### Do's (Make Presentations Engaging)
 
-- ✅ Use research-lookup to find 8-15 papers for citations
+- ✅ Use real, verifiable references (a research-lookup skill if installed, otherwise ask the user); never invent citations
 - ✅ Add HIGH-QUALITY visuals to EVERY slide (figures, images, diagrams, icons)
-- ✅ Choose MODERN color palette reflecting your topic (not defaults)
+- ✅ White background, one primary color + one accent color (see the pptx skill)
 - ✅ Keep text MINIMAL (3-4 bullets, 4-6 words each)
-- ✅ Use LARGE fonts (24-28pt body, 36-44pt titles)
+- ✅ Body 16-18pt, titles 26-32pt; shrink the text, not the font
 - ✅ Vary slide layouts (full-figure, two-column, visual overlays)
 - ✅ Maintain high contrast (7:1 preferred)
 - ✅ Generous white space (40-50% of slide)
@@ -564,9 +565,9 @@ python skills/scientific-slides/scripts/validate_presentation.py output.pptx --d
 - ❌ Don't create text-only slides (add visuals to EVERY slide)
 - ❌ Don't use default themes unchanged (customize for your topic)
 - ❌ Don't have all bullet-point slides (vary layouts)
-- ❌ Don't skip research-lookup (presentations need citations too)
+- ❌ Don't invent citations (presentations need real references)
 - ❌ Don't cram too much text on one slide
-- ❌ Don't use tiny fonts (<24pt for body)
+- ❌ Don't use tiny fonts (<14pt for body)
 - ❌ Don't rely solely on color
 - ❌ Don't use complex animations
 - ❌ Don't mix too many font styles
@@ -647,17 +648,18 @@ python skills/scientific-slides/scripts/validate_presentation.py output.pptx --d
 
 | Element | Minimum | Recommended |
 |---------|---------|-------------|
-| Title slide | 40pt | 44-54pt |
-| Slide title | 28pt | 32-40pt |
-| Body text | 18pt | 24-28pt |
-| Caption | 14pt | 16-20pt |
-| Footer | 10pt | 10-12pt |
+| Title slide | 32pt | 36-44pt |
+| Slide title | 24pt | 26-32pt |
+| Body text | 14pt | 16-18pt |
+| Table | 12pt | 12-13pt |
+| Caption / citation | 10pt | 11-12pt |
+| Footer | 10pt | 10-11pt |
 
 ### Color Usage
 
 - **Backgrounds**: White or very light colors
 - **Text**: Dark (black/dark gray) on light, or white on dark
-- **Accents**: One or two accent colors max
+- **Colors**: one primary + one accent (plus grays); charts with many series may use Okabe-Ito
 - **Data**: Color-blind safe palettes (blue/orange)
 
 ## Troubleshooting

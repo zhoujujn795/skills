@@ -60,7 +60,7 @@ Prefer position on a common scale. Before coding, check:
 
 - **DEFAULT PALETTE: Monochromatic Slate-Navy (`ACADEMIC_MONO_SLATE`)**:
   - Avoid "rainbow" plots (mixing bright orange, yellow, green, pink, and blue in the same chart).
-  - Instead, assign **neutral cool-gray / slate tones (`#94A3B8`, `#64748B`, `#475569`) to baseline/control methods**, and reserve the **deep academic navy (`#1E3A5F`)** (or at most one restrained accent) exclusively for the **proposed method (`Ours / O4`)** or key physical signal!
+  - Instead, assign **neutral cool-gray / slate tones (`#94A3B8`, `#64748B`, `#475569`) to baseline/control methods**, and reserve the **deep academic navy (`#1E3A5F`)** for the **proposed method (`Ours / O4`)** or key physical signal, and use the deck/figure accent `#C2410C` for the single thing to highlight. With more than 4 comparable series, switch to the Okabe-Ito palette (`okabe_ito_on_white`) instead of stacking grays that cannot be told apart; keep markers and line styles as redundant cues.
   - Differentiate series primarily via **hue value (light-to-dark luminance) + distinct marker shapes (`o`, `s`, `^`, `D`) + line styles (`-`, `--`, `:`)** so the figure looks like a top-tier Nature/JACS print figure and remains 100% clear in grayscale.
 - **Label & Annotation Anti-Collision Rules**:
   - Never let text annotations (`ax.text` / `ax.annotate` / bar value labels) cross reference lines (`axvline`/`axhline`), error bars, or axes spines. Always add sufficient `ylim`/`xlim` headroom (`12–15%` above the highest bar/error bar) and use `bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.85)` when a label sits near a grid or reference line.

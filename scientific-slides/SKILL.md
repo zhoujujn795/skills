@@ -26,12 +26,24 @@ Scientific presentations are a critical medium for communicating research, shari
 
 **CRITICAL DESIGN PHILOSOPHY**: Scientific presentations should be VISUALLY ENGAGING and RESEARCH-BACKED. Avoid dry, text-heavy slides at all costs. Great scientific presentations combine:
 - **Compelling visuals**: High-quality figures, images, diagrams (not just bullet points)
-- **Research context**: Proper citations from research-lookup establishing credibility
+- **Research context**: Real, verifiable citations establishing credibility (never invent references)
 - **Minimal text**: Bullet points as prompts, YOU provide the explanation verbally
 - **Professional design**: Modern color schemes, strong visual hierarchy, generous white space
 - **Story-driven**: Clear narrative arc, not just data dumps
 
 **Remember**: Boring presentations = forgotten science. Make your slides visually memorable while maintaining scientific rigor through proper citations.
+
+## Choose the Workflow First (default: editable PPTX)
+
+For academic talks (conference, seminar, defense, group meeting) **default to the editable PowerPoint workflow**: native text, original figures embedded unchanged, built with PptxGenJS. Follow the design rules in `../pptx/SKILL.md` (white background, one primary + one accent color, approved fonts, text budget) and pass `../pptx/scripts/layout_audit.py` before delivering.
+
+| Situation | Workflow |
+|---|---|
+| Results, data, equations, tables, anything the audience may question | **Editable PPTX** (default), or Beamer if the user wants LaTeX |
+| User supplies a template or existing deck | Edit the template (see `../pptx/SKILL.md`) |
+| Short conceptual/overview talk, no quantitative content, user accepts non-editable output | Image workflow (PDF), as a draft only |
+
+Never use AI-generated full-slide images for slides that show results: text in the image cannot be edited and is often misspelled.
 
 ## When to Use This Skill
 
@@ -97,7 +109,7 @@ Use the `generate_slide_image.py` script to create each slide.
 To ensure unified formatting across all slides in a presentation:
 
 1. **Define a Formatting Goal** at the start of your presentation and include it in EVERY prompt:
-   - Color scheme (e.g., "dark blue background, white text, gold accents")
+   - Color scheme (e.g., "white background, navy #1E3A5F titles, one orange #C2410C accent")
    - Typography style (e.g., "bold sans-serif titles, clean body text")
    - Visual style (e.g., "minimal, professional, corporate aesthetic")
    - Layout approach (e.g., "generous white space, left-aligned content")
@@ -125,10 +137,10 @@ To ensure unified formatting across all slides in a presentation:
 
 ```bash
 # Title slide (first slide - establishes the style)
-python scripts/generate_slide_image.py "Title slide for presentation: 'Machine Learning: From Theory to Practice'. Subtitle: '[Conference name and date]'. Speaker: '[Supplied presenter name]'. FORMATTING GOAL: Dark blue background (#1a237e), white text, gold accents (#ffc107), minimal design, sans-serif fonts, generous margins, no decorative elements." -o slides/01_title.png
+python scripts/generate_slide_image.py "Title slide for presentation: 'Machine Learning: From Theory to Practice'. Subtitle: '[Conference name and date]'. Speaker: '[Supplied presenter name]'. FORMATTING GOAL: White background, navy (#1E3A5F) titles, charcoal (#1F2937) text, one orange (#C2410C) accent, minimal design, sans-serif fonts, generous margins, no decorative elements." -o slides/01_title.png
 
 # Content slide with citations (attach previous slide for consistency)
-python scripts/generate_slide_image.py "Presentation slide titled 'Why Machine Learning Matters'. Three key points with simple icons: 1) Industry adoption, 2) Breakthrough applications, 3) Future potential. CITATIONS: Include at bottom in small text: (LeCun et al., 2015; Goodfellow et al., 2016). FORMATTING GOAL: Match attached slide style - dark blue background, white text, gold accents, minimal professional design, no visual clutter." -o slides/02_intro.png --attach slides/01_title.png
+python scripts/generate_slide_image.py "Presentation slide titled 'Why Machine Learning Matters'. Three key points with simple icons: 1) Industry adoption, 2) Breakthrough applications, 3) Future potential. CITATIONS: Include at bottom in small text: (LeCun et al., 2015; Goodfellow et al., 2016). FORMATTING GOAL: Match attached slide style - white background, navy titles, orange accent, minimal professional design, no visual clutter." -o slides/02_intro.png --attach slides/01_title.png
 
 # Background slide with multiple citations
 python scripts/generate_slide_image.py "Presentation slide titled 'Deep Learning Revolution'. Key milestones: ImageNet breakthrough (2012), transformer architecture (2017), GPT models (2018-present). CITATIONS: Show references at bottom: (Krizhevsky et al., 2012; Vaswani et al., 2017; Brown et al., 2020). FORMATTING GOAL: Match attached slide style exactly - same colors, fonts, minimal design." -o slides/03_background.png --attach slides/02_intro.png
@@ -191,7 +203,7 @@ Use PptxGenJS to create slides that include:
 - Generated images from step 1 (Note: When `OPENROUTER_API_KEY` is not configured, generate all data plots, schematic diagrams, solvation shells, and potential curves locally using Python `matplotlib`/`svg` via the `scientific-visualization` skill — **never** substitute missing figures with 30+ PptxGenJS text rectangles!)
 - Title and body text added separately (`<= 420` chars per main slide, body font `>= 13-15pt`; put full report paragraphs and detailed parameters into `slide.addNotes("...")`)
 - Never stack a large figure and a multi-row table on the same slide (PowerPoint tables auto-expand vertically and will crush bottom elements)
-- **Mandatory Automated Audit**: Always run `python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/layout_audit.py output.pptx` and fix all `[FAIL]` items before delivering the `.pptx`.
+- **Mandatory Automated Audit**: Always run `python3 ../pptx/scripts/layout_audit.py output.pptx` and fix all `[FAIL]` items before delivering the `.pptx`.
 
 See `assets/powerpoint_design_guide.md` for the PptxGenJS and template workflows and the rendering check.
 
@@ -235,14 +247,14 @@ often sink a talk are catalogued in
 
 ## Integration with Other Skills
 
-**Research Lookup** (Critical for Scientific Presentations):
+**Research Lookup** (optional; only if installed):
 - **Background development**: Search literature to build introduction context
 - **Citation gathering**: Find key papers to cite in your talk
 - **Gap identification**: Identify what's unknown to motivate research
 - **Prior work comparison**: Find papers to compare your results against
 - **Supporting evidence**: Locate literature supporting your interpretations
 - **Question preparation**: Find papers that might inform Q&A responses
-- **Always use research-lookup** when developing any scientific presentation to ensure proper context and citations
+- Use a research-lookup skill if one is installed. If not, ask the user for their references; never invent citations
 
 **Scientific Writing**:
 - Convert paper content to presentation format
@@ -356,7 +368,7 @@ See `assets/powerpoint_design_guide.md` for the complete PowerPoint workflow.
 
 1. **Visual-First Design**: Every slide needs strong visual element (figure, image, diagram) - avoid text-only slides
 2. **Research-Backed**: Use research-lookup to find 8-15 papers, cite 3-5 in intro, 3-5 in discussion
-3. **Modern Aesthetics**: Choose contemporary color palette matching topic, not default themes
+3. **Restrained Aesthetics**: White background, one primary color and one accent color (see `../pptx/SKILL.md`); never default themes or decorative cards
 4. **Minimal Text**: 3-4 bullets, 4-6 words each (24-28pt font), let visuals tell story
 5. **Structure**: Follow story arc, spend 40-50% on results
 6. **High Contrast**: 7:1 preferred for professional appearance
