@@ -133,8 +133,48 @@ TOL_LIGHT: Final = [
     "#DDDDDD",
 ]
 
+# Reference Benchmarks for Aqueous Mg2+ / MgCl2 Electrolyte & Raman Spectroscopy Project:
+# 1. Pan & Galli, Nature Communications 11, 421 (2020) — FPMD Raman & VDOS attribution
+PAN_GALLI_RAMAN: Final = [
+    "#000000",  # Unpolarized Raman / Total (Black)
+    "#E62222",  # Isotropic Raman (Crimson Red)
+    "#3355BB",  # VDOS / Vibrational Density of States (Cobalt Blue)
+    "#BC8F8F",  # Intramolecular / Sub-species component (Rosy Taupe)
+]
+
+# 2. Wang et al., Nature Communications 17, 1226 (2026) — MLFF Parity (Energy / Force / Virial)
+WANG_MLFF_PARITY: Final = [
+    "#E67E45",  # Energy E_MLP vs E_DFT (Coral Orange)
+    "#5E9CE6",  # Force F_MLP vs F_DFT (Sky Blue)
+    "#4DAF4A",  # Virial V_MLP vs V_DFT (Emerald Green)
+    "#191970",  # O4 / Corrected Force / Specific Solvate (Midnight Navy)
+]
+
+# 3. Wang et al., Nature Communications 17, 1226 (2026) Fig. 3e-f — Concentration Waterfall Blues
+WANG_WATERFALL_BLUES: Final = [
+    "#000000",  # Dilute limit (e.g., 0.1 M / 1:100)
+    "#082A63",  # Low concentration (0.5 M / 1:40)
+    "#0D47A1",  # Moderate concentration (1.0 M / 1:20)
+    "#1976D2",  # Intermediate concentration (2.0 M / 1:10)
+    "#42A5F5",  # High concentration (3.0 M / 1:5)
+    "#78B7E8",  # Concentrated (4.0 M / 1:3)
+    "#00D5FF",  # Water-in-salt / Eutectic limit (14 M / 1:2)
+]
+
+# 4. Balos et al., Nature Chemistry (2022) Fig. 6 — Solvation Shell H-Bond / Force Error Bars
+BALOS_HBOND_SHELLS: Final = [
+    "#FBC99D",  # 1st Shell / Cation-coordinated (Warm Peach, use with black 0.8pt outline)
+    "#9FD9A4",  # Anion-coordinated / CIP (Soft Mint Green, use with black 0.8pt outline)
+    "#C4B5D9",  # Shared Cation-Anion Bridge / AGG (Lavender, use with black 0.8pt outline)
+    "#FFF9A6",  # Bulk-type water / SSIP outer shell (Soft Yellow, use with black 0.8pt outline)
+]
+
 PALETTES: Final = {
     "academic_mono_slate": ACADEMIC_MONO_SLATE,
+    "pan_galli_raman": PAN_GALLI_RAMAN,
+    "wang_mlff_parity": WANG_MLFF_PARITY,
+    "wang_waterfall_blues": WANG_WATERFALL_BLUES,
+    "balos_hbond_shells": BALOS_HBOND_SHELLS,
     "okabe_ito": OKABE_ITO_LIST,
     "okabe_ito_on_white": OKABE_ITO_ON_WHITE,
     "wong": WONG,

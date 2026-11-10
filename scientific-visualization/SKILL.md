@@ -266,18 +266,31 @@ uv run --isolated --no-project --python 3.13 \
   python scripts/figure_export.py --demo outputs/export-smoke --manifest
 ```
 
+## Domain Specialization: Electrolyte Multiscale MD, MLFF Parity & Vibrational Spectroscopy
+
+When plotting for **aqueous electrolyte multiscale MD ($\mathrm{MgCl_2(+\,H_3PO_4)}$), MLFF/force-field benchmarks (`DBMLFF`, `O4` short-range repulsion fix, `ECC 0.75r`), or Raman/VDOS spectroscopy (`Mol2Raman` / DFT cluster attribution)**:
+- **Read [`references/electrolyte_spectroscopy_guide.md`](references/electrolyte_spectroscopy_guide.md) first.**
+- **Use the `electrolyte_nature` preset** (`axes.spines.top=True`, `axes.spines.right=True`, inward ticks `xtick.direction="in"`, boxed legends) rather than open-spine biology defaults, matching *Nature Communications* / *Nature Chemistry* / *Advanced Materials* physical chemistry conventions.
+- **Use [`scripts/electrolyte_plots.py`](scripts/electrolyte_plots.py)** for turnkey, collision-free multi-panel figures:
+  1. `plot_force_parity_with_inset`: `1:1` DFT vs Model force/energy parity scatter + top-left `RMSE` + bottom-right `Error Distribution` histogram inset (*Wang et al., Nat. Commun. 2026, Fig. 2*).
+  2. `plot_raman_vdos_stack`: Zero-gap (`hspace=0`) stacked Raman & VDOS attribution panels with vertical shift guides (*Pan & Galli, Nat. Commun. 2020, Fig. 2–3* + *Zhang et al., Adv. Mater. 2026, Fig. 1*).
+  3. `plot_spectral_waterfall`: Sequential-blue (`WANG_WATERFALL_BLUES`) concentration-gradient Raman/vDOS waterfall with screen-space translucent cyan shift arrow (*Wang et al., Nat. Commun. 2026, Fig. 3e–f*).
+  4. `plot_shell_bars`: Pastel-fill + black-outline grouped bar charts for coordination-shell (`6W SSIP`, `5W1Cl CIP`, `4W2Cl AGG`) force `RMSE` or H-bond strength (*Balos et al., Nat. Chem. 2022, Fig. 6*).
+  5. `plot_rdf_cn_panel` & `plot_tcf_with_inset`: Dual $g(r)$ + $CN(r)$ panels and shaded-error radial/time-correlation curves with linear regression insets (*Balos et al., Nat. Chem. 2022, Fig. 4*).
+
 ## Assets
 
 - `assets/publication.mplstyle`: general print starting point.
 - `assets/nature.mplstyle`: dated flagship Nature visual starting point, not a compliance preset.
 - `assets/presentation.mplstyle`: larger projected-display style.
-- `assets/color_palettes.py`: importable Okabe-Ito and Paul Tol values with metadata.
+- `assets/color_palettes.py`: importable Okabe-Ito, Paul Tol, and Electrolyte/Spectroscopy (`pan_galli_raman`, `wang_mlff_parity`, `wang_waterfall_blues`, `balos_hbond_shells`) values with metadata.
 - `assets/publisher_profiles.json`: dated, machine-readable planning snapshots.
 
 Matplotlib style files use double-quoted hex strings (for example, `"#0072B2"`); quotes preserve `#` instead of starting a comment.
 
 ## References
 
+- `references/electrolyte_spectroscopy_guide.md`: Nature Commun. / Nature Chem. / Adv. Mater. electrolyte MD, MLFF parity, and Raman/VDOS plotting guide.
 - `references/publication_guidelines.md`: integrity, deceptive encodings, accessibility, static/interactive output.
 - `references/color_palettes.md`: palette semantics, exact values, WCAG contrast, grayscale caveats, color management.
 - `references/journal_requirements.md`: phase-specific official publisher snapshots.
