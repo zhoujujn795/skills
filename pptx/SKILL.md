@@ -88,6 +88,11 @@ Keep slides simple and readable. No marketing-style decks, no card stacks, no de
 - **Primary (slate navy)** `1E3A5F`: titles, key lines, table header rule, main series.
 - **Accent (one only)** `C2410C` (burnt orange): the single thing you want the audience to look at: the key number, the proposed method's curve, one highlighted word. Use it sparingly, on at most 1–2 elements per slide.
 - **Neutrals**: text `1F2937`, muted text `6B7280` (citations, units, footer), rules `D1D5DB`, light fill `F4F6F9`.
+- **University Preset — 上海工程技术大学 (SUES 2025 Official New VI)**:
+  - **探索蓝 (Exploration Blue, Primary)**: `0A2F99` (`RGB: 10, 47, 153`, `PANTONE 2146C`) — slide titles, header rule, table header, main plot series.
+  - **展望蓝 (Envision Blue, Monochromatic Accent)**: `2E74FF` (`RGB: 46, 116, 255`, `PANTONE 2727C`) — section tag, key highlighted metrics, secondary plot series.
+  - **Neutrals**: body ink `1B1B1B`, muted text `595959`, official cool grey rule `C7C7C7` (`PANTONE 427C`), subtle surface tint `F4F6FA`, pure white `FFFFFF`.
+  - **Bundled 2025 VI Assets & Template**: `assets/sues_2025_vi/sues_logo_blue.png` (horizontal logo), `assets/sues_2025_vi/sues_mark_blue.png` (three-rotor `SUES` emblem), `assets/sues_2025_vi/logo.svg`, `assets/sues_2025_vi/SUES_2025_Academic_Template.pptx`, and generator `scripts/build_sues_2025_template.py`.
 - **Never** use a third hue on shapes or text (no green/purple/yellow pills, status boxes, or rainbow bullets). The audit fails at >2 chromatic hues.
 - **Figures and charts** may use a colorblind-safe palette (Okabe-Ito: `0072B2`, `D55E00`, `009E73`, `E69F00`, `56B4E9`, `CC79A7`, `000000`). For charts with ≤3 series prefer the primary, the accent and a gray. Add a non-color cue (line style or marker) when more than 3 series share a chart. The audit reads slide XML only, so it does not check native chart colors; review those in the render.
 

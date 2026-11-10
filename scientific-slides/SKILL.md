@@ -35,7 +35,7 @@ Scientific presentations are a critical medium for communicating research, shari
 
 ## Choose the Workflow First (default: editable PPTX)
 
-For academic talks (conference, seminar, defense, group meeting) **default to the editable PowerPoint workflow**: native text, original figures embedded unchanged, built with PptxGenJS. Follow the design rules in `../pptx/SKILL.md` (white background, one primary + one accent color, approved fonts, text budget) and pass `../pptx/scripts/layout_audit.py` before delivering.
+For academic talks (conference, seminar, defense, group meeting) **default to the editable PowerPoint workflow**: native text, original figures embedded unchanged, built with PptxGenJS or `python-pptx`. Follow the design rules in `../pptx/SKILL.md` (white background, one primary + one accent color, approved fonts, text budget) and pass `../pptx/scripts/layout_audit.py` before delivering. For **上海工程技术大学 (SUES)** presentations, use the bundled **2025 Official VI Preset** (`#0A2F99` 探索蓝 + `#2E74FF` 展望蓝 + `#C7C7C7` 冷灰 + `assets/sues_2025_vi/SUES_2025_Academic_Template.pptx`).
 
 | Situation | Workflow |
 |---|---|

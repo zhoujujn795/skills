@@ -114,7 +114,7 @@ def audit_pptx(pptx_path: Path) -> int:
             full_slide_text = " ".join(all_texts)
             is_backup = bool(re.search(r"\[Backup|附录\s*A", full_slide_text))
 
-            total_chars = sum(len(t.strip()) for t in all_texts)
+            total_chars = sum(len(" ".join(t.split())) for t in all_texts)
             char_limit = CHAR_LIMIT_BACKUP if is_backup else CHAR_LIMIT_MAIN
             if total_chars > char_limit:
                 errors.append(
@@ -255,7 +255,9 @@ def audit_pptx(pptx_path: Path) -> int:
 
             # Check tables and vertical expansion
             for gf in root.findall(".//p:graphicFrame", NS):
-                xfrm = gf.find(".//p:xfrm", NS) or gf.find(".//a:xfrm", NS)
+                xfrm = gf.find(".//p:xfrm", NS)
+                if xfrm is None:
+                    xfrm = gf.find(".//a:xfrm", NS)
                 tbl = gf.find(".//a:tbl", NS)
                 if tbl is None or xfrm is None:
                     continue
