@@ -1,67 +1,49 @@
-# Electrolyte Multiscale MD, MLFF Benchmark & Vibrational Spectroscopy Plotting Guide
+# Three-Category Reference Guide: MgCl₂ Aqueous Electrolyte, Raman Prediction & MLFF
 
-This reference documents the specialized physical chemistry, electrolyte solvation, machine-learning force field (MLFF), and Raman/VDOS spectroscopy plotting conventions tailored for the **Aqueous $\mathrm{MgCl_2(+\,H_3PO_4)}$ Multiscale MD & Vibrational Spectroscopy** project (`DBMLFF` force benchmark + `Mol2Raman` / DFT Raman attribution).
+This reference documents the complete 3-category top-journal plotting conventions tailored for **《水系镁离子电池电解液溶剂化结构演化的多尺度模拟与振动光谱研究》**, distilled directly from the 79 figures in the project's Google Drive (`参考绘图`):
 
-It is directly distilled from the 4 benchmark papers in the project's Google Drive (`参考绘图`):
+---
 
-1. **Pan & Galli**, *Nature Communications* **11**, 421 (2020) — `DOI: 10.1038/s41467-019-14248-1`
-   - *Structural paradigm*: **Zero-gap vertical stacked panels (`hspace=0.0`)** sharing the x-axis (`Raman shift (cm⁻¹)` or `Frequency (cm⁻¹)`), with y-axis ticks hidden (`yticks=[]`) for normalized/arbitrary-unit spectra (`R(ω)` / `VDOS`).
-   - *Curve encoding*: Black (`#1A1A1A`) for Experiment / Total reference, Crimson Red (`#E41A1C`) for Isotropic / Total FPMD or DFT Raman, Cobalt Blue (`#2B5C8F`) for VDOS or Inter-shell contribution, and Warm Taupe (`#B89B82`) for Intra-cluster (`[Mg(H₂O)₆]²⁺` / `CIP`) contribution.
-   - *Peak annotations*: Italic math mode labels (`$\nu_1\ (355)$`, `$\nu_{\mathrm{Mg-Cl}}$`, `$\nu_{\mathrm{lib}}$`) placed above peak tips in a dedicated lower band (`y < 0.88`), while panel letters (`a`, `b`) and state labels (`1 m MgCl₂ (SSIP)`) occupy the upper band (`y = 0.88..0.94`) to guarantee zero text/peak collision.
+## Category 1: `MgCl2水系电解质` (39 Figures)
 
-2. **Wang et al.**, *Nature Communications* **17**, 1226 (2026) — `DOI: 10.1038/s41467-025-67982-0`
-   - *MLFF / Force-Field Parity (`Fig. 2a–c`)*: Square `1:1` parity scatter (`F_DFT` vs `F_Model`) with diagonal `k--` line, translucent scatter points (`#5E9CE6`, `alpha=0.35`, `rasterized=True`), **top-left `RMSE` text block**, and a **bottom-right `Error Distribution` inset histogram (`inset_axes([0.53, 0.13, 0.41, 0.34])`)** formatted with `PercentFormatter`.
-   - *RDF & Coordination Number (`Fig. 3a–d`)*: Stacked `g(r)` and `CN(r)` panels with vertical dashed first-shell cutoff (`r = 2.85 Å` for `Mg²⁺–O_w`).
-   - *Concentration-Gradient Spectral Waterfall (`Fig. 3e–f`)*: Vertically offset spectra (`offset_step = 0.50..0.60`) colored along a sequential dark-navy-to-sky-blue gradient (`WANG_WATERFALL_BLUES`), accompanied by a screen-space translucent cyan shift arrow (`arrowstyle="simple"`, `alpha=0.30`) tracking the progressive peak blue/red shift across concentrations.
-
+1. **Tazi et al.**, *J. Chem. Phys.* **136**, 114507 (2012) — `DOI: 10.1063/1.3692965`
+   - *Fig. 3 (p16)*: **3-Component ($F_x, F_y, F_z$) Trajectory Force Trace (`plot_tazi_3comp_force_trace`)** across configuration index (`1..80`), directly comparing DFT reference forces (red `×` markers) against classical force field predictions (solid/dashed lines). Direct literature precedent for our 20-frame / 80-frame single-snapshot force benchmark.
+2. **Jiang et al.**, *J. Energy Chem.* **109**, 466–478 (2025) — `DOI: 10.1016/j.jechem.2025.05.053`
+   - *Fig. 2d–e*: **Dual-Axis RDF $g(r)$ + Running Coordination Number $\mathrm{CN}(r)$ (`plot_jiang_rdf_cn_dual`)** — solid lines on left axis for $g(r)$, dashed lines on right axis for $\mathrm{CN}(r)$.
+   - *Fig. 2b–c & Fig. 3a*: **Concentration-Dependent Solvation Speciation (`SSIP`, `CIP`, `AGG`) + H-Bond Network Evolution**.
 3. **Balos et al.**, *Nature Chemistry* **14**, 1031–1039 (2022) — `DOI: 10.1038/s41557-022-00977-2`
-   - *Time-Correlation / Radial Force Error with Inset (`Fig. 4`)*: Line curves with `fill_between(..., alpha=0.22)` uncertainty bands and a top-right linear regression inset (`inset_axes([0.55, 0.52, 0.40, 0.42])`).
-   - *Solvation-Shell / Coordination-Environment Grouped Bars (`Fig. 6`)*: Soft pastel fills (`BALOS_HBOND_SHELLS`: `#F4C29F`, `#92C99A`, `#C2B2D8`, `#F2E896`, `#9ECAE1`) paired with **crisp black bar outlines (`edgecolor="black", linewidth=0.85`)** and black error-bar caps (`capsize=2.5`). Always place the boxed legend in the low-bar corner (`loc="upper left"` when `6W (SSIP)` is on the left) with `15–20%` y-headroom.
-
-4. **Zhang et al.**, *Advanced Materials* (2026) — `DOI: 10.1002/adma.72904`
-   - *Multi-Environment Shift Tracking (`Fig. 1`)*: Vertical dashed guide lines (`axvline`, `ls="--"`, `color="#888888"`) threading across stacked panels to highlight how `CIP`/`AGG` formation or `H₃PO₄` addition shifts the `Mg–O` breathing mode (`355 cm⁻¹`) and `Mg–Cl` stretching mode (`262 cm⁻¹`).
+   - *Fig. 6*: **Coordination-Environment Resolved Pastel + Black-Edge Grouped Bar Chart (`plot_shell_bars`)** — used for comparing `Mg_free`, `Mg_paired`, `Cl_CIP`, `Cl_Trans`, `Cl_SSIP`, and `Cl_Free` force $\mathrm{RMSE_{vec}}$.
 
 ---
 
-## Core Axes & Typography Convention (`electrolyte_nature` Preset)
+## Category 2: `拉曼光谱预测` (23 Figures)
 
-Unlike biology journals (which often remove top and right spines and use outward ticks), **physical chemistry and spectroscopy papers in *Nature Communications*, *Nature Chemistry*, *JACS*, and *Advanced Materials* almost universally use**:
-- **Closed 4-sided frame**: `axes.spines.top = True`, `axes.spines.right = True`, `axes.linewidth = 0.9`
-- **Inward-pointing ticks**: `xtick.direction = "in"`, `ytick.direction = "in"`
-- **Sharp rectangular legend box**: `legend.frameon = True`, `legend.edgecolor = "black"`, `legend.fancybox = False`
-- **Editable vector fonts**: `pdf.fonttype = 42`, `ps.fonttype = 42`, `savefig.dpi = 450`
-
-Use the preset via `style_presets.py`:
-```python
-from style_presets import style_context
-
-with style_context("electrolyte_nature", palette_name="pan_galli_raman"):
-    ...
-```
-or directly import the high-level plotting helpers in `scripts/electrolyte_plots.py`:
-
-```python
-from electrolyte_plots import (
-    apply_electrolyte_nature_style,
-    add_panel_label,
-    plot_force_parity_with_inset,
-    plot_raman_vdos_stack,
-    plot_spectral_waterfall,
-    plot_shell_bars,
-    plot_rdf_cn_panel,
-    plot_tcf_with_inset,
-)
-```
+1. **Sorrentino et al. (`Mol2Raman`)**, *Digital Discovery* **5**, 161–176 (2026) — `DOI: 10.1039/d5dd00210a`
+   - *Fig. 4*: **DFT vs Predicted Raman Spectrum Overlay with `× 2` Magnified Low-Wavenumber Box (`plot_mol2raman_overlay_with_zoom_box`)** — blue curve for DFT-calculated spectrum, red curve for ML-predicted spectrum, and a crisp black rectangle highlighting the amplified (`× 2`) low-frequency region (`160–540 cm⁻¹`, covering $\nu_{\mathrm{Mg-Cl}}$ at `262 cm⁻¹` and $\nu_1\ \mathrm{MgO_6}$ at `355 cm⁻¹`).
+   - *Fig. 3*: **Spectral Peak Matching $F_1\ (15\ \mathrm{cm^{-1}})$ Histogram (`plot_mol2raman_f1_histogram`)** — overlapping translucent histograms comparing `1st-Shell Only (6W)` vs `Explicit 1st+2nd Shell (18W)` with vertical dashed median lines.
+2. **Xu et al. (`TNEP`)**, *J. Chem. Theory Comput.* (2024) — `DOI: 10.1021/acs.jctc.3c01343`
+   - *Fig. 2*: **Two-Tier Log-Scale Test RRMSE (%) Bar Chart (`plot_xu_tnep_log_rrmse_bars`)** for Dipole ($\boldsymbol{\mu}$) and Polarizability Tensor ($\boldsymbol{\alpha}|\boldsymbol{\chi}$).
+   - *Fig. 4*: **Multi-Tier Zero-Gap Stacked IR / Anisotropic Raman / Isotropic Raman Spectra**.
+3. **Pan & Galli**, *Nature Communications* **11**, 421 (2020) — `DOI: 10.1038/s41467-019-14248-1`
+   - *Fig. 2–3*: **Zero-Gap (`hspace=0`) Stacked Raman & VDOS Attribution (`plot_raman_vdos_stack`)** with Zhang et al. (*Adv. Mater.* 2026) vertical dashed Raman shift guides.
 
 ---
 
-## Mapping to Project Tasks (`MgCl₂(+H₃PO₄)` Multiscale MD & Raman)
+## Category 3: `机器学习力场` (17 Figures)
 
-| Project Task / Manuscript Figure | Recommended Helper in `scripts/electrolyte_plots.py` | Palette in `assets/color_palettes.py` |
-|---|---|---|
-| **Line ①**: `DBMLFF` / `O4` Short-Range Repulsion Fix vs `DFT (PBE-D3)` Force & Energy Parity (`1 m` ID + `3 m` OOD Blind Test) | `plot_force_parity_with_inset()` | `wang_mlff_parity` (`#5E9CE6`) |
-| **Line ①**: Coordination-Resolved Force `RMSE_vec` (`6W SSIP`, `5W1Cl CIP`, `4W2Cl AGG`) across `12-6 LJ`, `ECC 0.75r`, `O4`, and `DBMLFF` | `plot_shell_bars()` | `balos_hbond_shells` |
-| **Line ①**: Short-Range `Mg²⁺–O_w` / `Mg²⁺–Cl⁻` Radial Force Error `ΔF_r(r)` with Shaded SD Band | `plot_tcf_with_inset()` | `pan_galli_raman` |
-| **Line ① & ②**: `GROMACS` MD Radial Distribution Function `g(r)` & Running Coordination Number `CN(r)` (`0.75r` ECC vs `1.00r`) | `plot_rdf_cn_panel()` | `wang_waterfall_blues` |
-| **Line ②**: `Mg–O` (`355 cm⁻¹`) & `Mg–Cl` (`262 cm⁻¹`) Isotropic Raman + Intra-Shell (`1st` vs `1st+2nd` shell) + VDOS Attribution | `plot_raman_vdos_stack()` | `pan_galli_raman` |
-| **Line ②**: Cross-Concentration (`0.5 m → 4.5 m`) or `H₃PO₄` Perturbation Raman / vDOS Waterfall with Shift Arrow | `plot_spectral_waterfall()` | `wang_waterfall_blues` |
+1. **Wang et al.**, *Nature Communications* **17**, 1226 (2026) — `DOI: 10.1038/s41467-025-67982-0`
+   - *Fig. 2*: **Force/Energy Parity Scatter + Bottom-Right `Error Distribution` Percentage Histogram Inset (`plot_force_parity_with_inset`)**.
+2. **Batatia et al. (`MACE`, NeurIPS 2022)** & **Batzner et al. (`NequIP`, *Nat. Commun.* 13, 2453, 2022)**
+   - *Fig. 2 / Fig. 5*: **Log-Log Force MAE Learning Curve (`plot_mace_nequip_learning_curve`)** (`Force MAE [eV/Å]` vs `Number of training configurations N` from $10^1$ to $10^3$) with power-law slopes $s$ and horizontal DFT convergence floor (`PBE vs PBE-D3 RMSE = 0.0068 eV/Å`).
+3. **Zheng et al. (`ByteFF-Pol`)**, *Nature Communications* (2026) — `DOI: 10.1038/s41467-026-73566-3`
+   - *Fig. 2b–c*: **Short-Range Radial Force / Interaction Energy Decomposition** (`Pure 12-6 LJ r^-12`, `Pure Coulomb`, `Leg A Total`, `LDA Overbinding`, `O4 Balanced Fix`).
+   - *Fig. 4*: **Charge-Scaling (`0.75r / 0.80r ECC`) vs Polarizable / MLFF Transport & Coordination Comparison**.
+
+---
+
+## Turnkey CLI Execution
+
+Generate all three category figures (`PDF` + `450 DPI PNG`) in one command:
+```bash
+/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/scientific-visualization/scripts/electrolyte_plots.py /Users/zhoujun/Documents/科研/01_开题报告
+```
