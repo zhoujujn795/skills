@@ -30,10 +30,12 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.patches import Rectangle
 
-# Ensure assets/ is importable
-ASSET_DIR = Path(__file__).resolve().parents[1] / "assets"
-if str(ASSET_DIR) not in sys.path:
-    sys.path.insert(0, str(ASSET_DIR))
+# Ensure scripts/ and assets/ are importable
+SCRIPT_DIR = Path(__file__).resolve().parent
+ASSET_DIR = SCRIPT_DIR.parent / "assets"
+for _p in (str(SCRIPT_DIR), str(ASSET_DIR)):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from color_palettes import (
     PAN_GALLI_RAMAN,
@@ -41,10 +43,19 @@ from color_palettes import (
     WANG_WATERFALL_BLUES,
     BALOS_HBOND_SHELLS,
 )
+from ppt_origin_export import (
+    OriginColumn,
+    audit_svg_ppt_compatibility,
+    clip_curve_to_box,
+    clip_scatter_to_box,
+    sanitize_svg_for_ppt,
+    write_origin_csv,
+    write_origin_xlsx,
+)
 
 
 def apply_electrolyte_nature_style() -> None:
-    """Apply the closed-box, inward-tick physical chemistry top-journal style."""
+    """Apply the closed-box, inward-tick physical chemistry top-journal style (100% PPT/Arial safe)."""
     mpl.rcParams.update({
         "figure.facecolor": "white",
         "savefig.facecolor": "white",
@@ -53,7 +64,17 @@ def apply_electrolyte_nature_style() -> None:
         "ps.fonttype": 42,
         "svg.fonttype": "none",
         "font.family": "sans-serif",
-        "font.sans-serif": ["Arial", "Helvetica", "PingFang SC", "Heiti TC", "DejaVu Sans"],
+        "font.sans-serif": ["Arial", "Helvetica", "PingFang SC", "Heiti TC"],
+        # Force Matplotlib mathtext ($...$) to use system Arial instead of missing DejaVu Sans
+        "mathtext.fontset": "custom",
+        "mathtext.rm": "Arial",
+        "mathtext.it": "Arial:italic",
+        "mathtext.bf": "Arial:bold",
+        "mathtext.bfit": "Arial:bold:italic",
+        "mathtext.sf": "Arial",
+        "mathtext.cal": "Arial:italic",
+        "mathtext.tt": "Courier New",
+        "mathtext.fallback": "stixsans",
         "axes.unicode_minus": False,
         "font.size": 8.2,
         "axes.labelsize": 8.8,
@@ -116,24 +137,30 @@ def plot_tazi_3comp_force_trace(
     comp_labels = [r"$F_x\ (\mathrm{eV/\AA})$", r"$F_y\ (\mathrm{eV/\AA})$", r"$F_z\ (\mathrm{eV/\AA})$"]
     axes: list[plt.Axes] = []
 
+    xlim = (0.0, float(len(idx) + 1))
     for c in range(3):
         ax = fig.add_subplot(gs[c], sharex=axes[0] if axes else None)
+        ylim_c = (-3.4, 4.3 if c == 0 else 3.4)
         ax.axhline(0.0, color="#CCCCCC", lw=0.6, zorder=0)
         for sp in cohort_splits:
             ax.axvline(sp, color="#888888", ls=":", lw=0.75, zorder=0)
 
-        ax.plot(idx, f_base_xyz[:, c], color="#94A3B8", ls="--", lw=0.95, label="12-6 LJ (Leg A)" if c == 0 else None, zorder=1)
-        ax.plot(idx, f_o4_xyz[:, c], color="#111111", ls="-", lw=1.15, label="O4 Fix (Ours)" if c == 0 else None, zorder=2)
-        ax.plot(idx, f_dft_xyz[:, c], color="#E41A1C", marker="x", ms=3.3, mew=0.8, ls="none", label="DFT (PBE)" if c == 0 else None, zorder=3)
+        xb_c, yb_c = clip_curve_to_box(idx, f_base_xyz[:, c], xlim, ylim_c)
+        xo_c, yo_c = clip_curve_to_box(idx, f_o4_xyz[:, c], xlim, ylim_c)
+        xd_c, yd_c = clip_scatter_to_box(idx, f_dft_xyz[:, c], xlim, ylim_c)
+
+        ax.plot(xb_c, yb_c, color="#94A3B8", ls="--", lw=0.95, label="12-6 LJ (Leg A)" if c == 0 else None, zorder=1)
+        ax.plot(xo_c, yo_c, color="#111111", ls="-", lw=1.15, label="O4 Fix (Ours)" if c == 0 else None, zorder=2)
+        ax.plot(xd_c, yd_c, color="#E41A1C", marker="x", ms=3.3, mew=0.8, ls="none", label="DFT (PBE)" if c == 0 else None, zorder=3)
 
         ax.set_ylabel(comp_labels[c], fontsize=7.8, labelpad=3)
-        ax.set_ylim(-3.4, 4.3 if c == 0 else 3.4)
+        ax.set_ylim(ylim_c)
         ax.set_yticks([-2, 0, 2])
         if c < 2:
             plt.setp(ax.get_xticklabels(), visible=False)
         axes.append(ax)
 
-    axes[0].set_xlim(0, len(idx) + 1)
+    axes[0].set_xlim(xlim)
     bbox_tag = dict(boxstyle="round,pad=0.12", facecolor="white", edgecolor="none", alpha=0.88)
     axes[0].text(10, 3.85, "1m_orig20", fontsize=6.3, ha="center", va="top", color="#333333", bbox=bbox_tag)
     axes[0].text(35, 3.85, "1m_ext30", fontsize=6.3, ha="center", va="top", color="#333333", bbox=bbox_tag)
@@ -154,7 +181,7 @@ def plot_jiang_rdf_cn_dual(
     curves: list[tuple[str, np.ndarray, np.ndarray, str]],
     *,
     xlabel: str = r"$r\ (\mathrm{nm})$",
-    ylabel_left: str = r"$g(r)$ of $\mathrm{Mg^{2+}-O_w\ /\ Cl^-}$",
+    ylabel_left: str = r"$g(r)$ of $\mathrm{Mg^{2+}\text{-}O_w\ /\ Cl^-}$",
     ylabel_right: str = "Coordination Number (CN)",
 ) -> plt.Axes:
     """
@@ -162,16 +189,21 @@ def plot_jiang_rdf_cn_dual(
     """
     ax_cn = ax.twinx()
     ax_cn.tick_params(direction="in")
+    xlim = (0.16, 0.55)
+    ylim_gr = (0.0, 18.6)
+    ylim_cn = (0.0, 7.6)
 
     for label, gr, cn, col in curves:
-        ax.plot(r_nm, gr, color=col, ls="-", lw=1.35, label=label)
-        ax_cn.plot(r_nm, cn, color=col, ls="--", lw=1.15, alpha=0.88)
+        rx_g, gy = clip_curve_to_box(r_nm, gr, xlim, ylim_gr)
+        rx_c, cy = clip_curve_to_box(r_nm, cn, xlim, ylim_cn)
+        ax.plot(rx_g, gy, color=col, ls="-", lw=1.35, label=label)
+        ax_cn.plot(rx_c, cy, color=col, ls="--", lw=1.15, alpha=0.88)
 
     ax.axvline(0.209, color="#1E3A8A", ls=":", lw=0.75, alpha=0.7)
     ax.axvline(0.243, color="#B22222", ls=":", lw=0.75, alpha=0.7)
     bbox_w = dict(boxstyle="round,pad=0.12", facecolor="white", edgecolor="none", alpha=0.85)
-    ax.text(0.209, 17.6, r"$\mathrm{Mg-O_w}$ (0.209 nm)", fontsize=6.3, color="#1E3A8A", ha="left", va="top", bbox=bbox_w)
-    ax.text(0.246, 15.5, r"$\mathrm{Mg-Cl^-}$ (0.243 nm)", fontsize=6.3, color="#B22222", ha="left", va="top", bbox=bbox_w)
+    ax.text(0.209, 17.6, r"$\mathrm{Mg\text{-}O_w}$ (0.209 nm)", fontsize=6.3, color="#1E3A8A", ha="left", va="top", bbox=bbox_w)
+    ax.text(0.246, 15.5, r"$\mathrm{Mg\text{-}Cl^-}$ (0.243 nm)", fontsize=6.3, color="#B22222", ha="left", va="top", bbox=bbox_w)
 
     ax.set_xlim(0.16, 0.55)
     ax.set_ylim(0, 18.6)
@@ -247,8 +279,12 @@ def plot_mol2raman_overlay_with_zoom_box(
     y_dft_plot[mask_z] *= zoom_factor
     y_pred_plot[mask_z] *= zoom_factor
 
-    ax.plot(wn, y_dft_plot, color="#1F77B4", lw=1.35, label="DFT-Calculated (B3LYP/def2-TZVP)")
-    ax.plot(wn, y_pred_plot, color="#E41A1C", lw=1.20, alpha=0.90, label="ML-Predicted (2nd-Shell GINE/TNEP)")
+    xlim = (150.0, 1250.0)
+    ylim = (0.0, 1.24)
+    wx_d, yd_c = clip_curve_to_box(wn, y_dft_plot, xlim, ylim)
+    wx_p, yp_c = clip_curve_to_box(wn, y_pred_plot, xlim, ylim)
+    ax.plot(wx_d, yd_c, color="#1F77B4", lw=1.35, label="DFT-Calculated (B3LYP/def2-TZVP)")
+    ax.plot(wx_p, yp_c, color="#E41A1C", lw=1.20, alpha=0.90, label="ML-Predicted (2nd-Shell GINE/TNEP)")
 
     # Draw Mol2Raman signature black magnification rectangle
     box_h = 0.62
@@ -263,7 +299,7 @@ def plot_mol2raman_overlay_with_zoom_box(
     )
 
     # Peak annotations inside & outside the box (collision-free)
-    ax.text(262, 0.29, r"$\nu_{\mathrm{Mg-Cl}}$" + "\n(262)", fontsize=6.5, ha="center", va="bottom", color="#111111")
+    ax.text(262, 0.29, r"$\nu_{\mathrm{Mg\text{-}Cl}}$" + "\n(262)", fontsize=6.5, ha="center", va="bottom", color="#111111")
     ax.text(355, 0.49, r"$\nu_1\ \mathrm{MgO_6}$" + "\n(355)", fontsize=6.6, ha="center", va="bottom", color="#B22222", fontweight="bold")
     ax.text(890, 0.48, r"$\nu_{\mathrm{P(OH)_2}}$" + "\n(890)", fontsize=6.5, ha="center", va="bottom", color="#1F77B4")
     ax.text(988, 0.88, r"$\nu_s(\mathrm{PO_4})$" + "\n(988)", fontsize=6.7, ha="center", va="bottom", color="#111111")
@@ -303,9 +339,11 @@ def plot_raman_vdos_stack(
     ax_bot = fig.add_subplot(gs[1], sharex=ax_top)
 
     for label, y, col in top_curves:
-        ax_top.plot(wavenumber, y, label=label, color=col, lw=1.25)
+        wx_t, yt_c = clip_curve_to_box(wavenumber, y, xlim, ylim)
+        ax_top.plot(wx_t, yt_c, label=label, color=col, lw=1.25)
     for label, y, col in bottom_curves:
-        ax_bot.plot(wavenumber, y, label=label, color=col, lw=1.25)
+        wx_b, yb_c = clip_curve_to_box(wavenumber, y, xlim, ylim)
+        ax_bot.plot(wx_b, yb_c, label=label, color=col, lw=1.25)
 
     if vertical_guides:
         for vx in vertical_guides:
@@ -365,14 +403,21 @@ def plot_xu_tnep_log_rrmse_bars(
     total_w = 0.72
     bw = total_w / len(models)
 
+    y_floor = 0.08
     for m_idx, m_name in enumerate(models):
         pos = x - 0.5 * total_w + (m_idx + 0.5) * bw
-        ax_mu.bar(pos, mu_rrmse[:, m_idx], width=bw * 0.88, color=cols[m_idx % len(cols)], edgecolor="black", lw=0.45, label=m_name)
-        ax_al.bar(pos, alpha_rrmse[:, m_idx], width=bw * 0.88, color=cols[m_idx % len(cols)], edgecolor="black", lw=0.45, label=m_name)
+        ax_mu.bar(
+            pos, np.maximum(mu_rrmse[:, m_idx] - y_floor, 0.0), bottom=y_floor,
+            width=bw * 0.88, color=cols[m_idx % len(cols)], edgecolor="black", lw=0.45, label=m_name
+        )
+        ax_al.bar(
+            pos, np.maximum(alpha_rrmse[:, m_idx] - y_floor, 0.0), bottom=y_floor,
+            width=bw * 0.88, color=cols[m_idx % len(cols)], edgecolor="black", lw=0.45, label=m_name
+        )
 
     for ax in (ax_mu, ax_al):
         ax.set_yscale("log")
-        ax.set_ylim(0.08, 42.0)
+        ax.set_ylim(y_floor, 42.0)
         ax.set_ylabel("Test RRMSE (%)", fontsize=7.8)
 
     plt.setp(ax_mu.get_xticklabels(), visible=False)
@@ -441,18 +486,21 @@ def plot_force_parity_with_inset(
     if rmse_val is None:
         rmse_val = float(np.sqrt(np.mean((f_model - f_dft) ** 2)))
 
+    ylim_p = (lim[0], lim[1] + 4.2)  # Extra top headroom for collision-free legend & header
     ax.plot(lim, lim, "k--", lw=0.9, zorder=1)
     if f_baseline is not None:
+        xb_p, yb_p = clip_scatter_to_box(f_dft, f_baseline, lim, ylim_p)
         ax.scatter(
-            f_dft, f_baseline, s=4, c="#E67E45", alpha=0.22, edgecolors="none",
+            xb_p, yb_p, s=4, c="#E67E45", alpha=0.22, edgecolors="none",
             rasterized=False, zorder=2, label=f"Leg A (RMSE={rmse_base:.2f}, α=1.86)"
         )
+    xm_p, ym_p = clip_scatter_to_box(f_dft, f_model, lim, ylim_p)
     ax.scatter(
-        f_dft, f_model, s=5, c=color, alpha=0.40, edgecolors="none",
+        xm_p, ym_p, s=5, c=color, alpha=0.40, edgecolors="none",
         rasterized=False, zorder=3, label=f"O4 Fix (RMSE={rmse_val:.2f}, α=1.13)"
     )
     ax.set_xlim(lim)
-    ax.set_ylim(lim[0], lim[1] + 4.2)  # Extra top headroom for collision-free legend & header
+    ax.set_ylim(ylim_p)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
 
@@ -510,12 +558,17 @@ def plot_mace_nequip_learning_curve(
 
 def save_publication_figure(fig: plt.Figure, out_pdf: str, out_png: str, out_svg: str | None = None) -> str:
     """
-    Always export editable vector SVG (svg.fonttype='none') alongside PDF (Type 42) and 450 DPI PNG.
+    Export PowerPoint-sanitized vector SVG (zero `<tspan>`, zero `<clipPath>`, 100% Arial glyphs)
+    alongside PDF (Type 42) and 450 DPI PNG.
     """
     if out_svg is None:
         out_svg = str(Path(out_pdf).with_suffix(".svg"))
     os.makedirs(os.path.dirname(os.path.abspath(out_svg)), exist_ok=True)
     fig.savefig(out_svg)
+    sanitize_svg_for_ppt(out_svg)
+    audit = audit_svg_ppt_compatibility(out_svg)
+    if not audit["ok"]:
+        raise RuntimeError(f"PPT SVG compatibility audit failed for {out_svg}: {audit}")
     fig.savefig(out_pdf, dpi=450)
     fig.savefig(out_png, dpi=450)
     return out_svg
@@ -551,9 +604,9 @@ def generate_cat1_mgcl2_electrolyte(out_pdf: str, out_png: str) -> None:
     plot_jiang_rdf_cn_dual(
         ax_b, r_nm,
         curves=[
-            (r"$\mathrm{Mg-O_w\ (0.75r\ ECC,\ CN=5.72)}$", gr_mgo, cn_mgo, "#1E3A8A"),
-            (r"$\mathrm{Mg-Cl^-\ (1.00r\ Raw,\ CN=1.20)}$", gr_mgcl_100, cn_mgcl_100, "#94A3B8"),
-            (r"$\mathrm{Mg-Cl^-\ (0.75r\ ECC,\ CN=0.30)}$", gr_mgcl_075, cn_mgcl_075, "#E41A1C"),
+            (r"$\mathrm{Mg\text{-}O_w\ (0.75r\ ECC,\ CN=5.72)}$", gr_mgo, cn_mgo, "#1E3A8A"),
+            (r"$\mathrm{Mg\text{-}Cl^-\ (1.00r\ Raw,\ CN=1.20)}$", gr_mgcl_100, cn_mgcl_100, "#94A3B8"),
+            (r"$\mathrm{Mg\text{-}Cl^-\ (0.75r\ ECC,\ CN=0.30)}$", gr_mgcl_075, cn_mgcl_075, "#E41A1C"),
         ]
     )
     add_panel_label(ax_b, "b", x=-0.14, y=1.04)
@@ -573,7 +626,7 @@ def generate_cat1_mgcl2_electrolyte(out_pdf: str, out_png: str) -> None:
     ax_c.bar(concs, cip_frac, width=w_bar, bottom=ssip_frac, color="#FBC99D", edgecolor="black", lw=0.7, label=r"CIP $\mathrm{[MgCl(H_2O)_5]^+}$")
     ax_c.bar(concs, agg_frac, width=w_bar, bottom=ssip_frac + cip_frac, color="#C4B5D9", edgecolor="black", lw=0.7, label=r"AGG $\mathrm{[MgCl_2(H_2O)_4]}$")
 
-    ax_c_hb.plot(concs, hbonds_per_w, "o-", color="#B22222", lw=1.35, ms=4.2, label="H-bonds / H₂O")
+    ax_c_hb.plot(concs, hbonds_per_w, "o-", color="#B22222", lw=1.35, ms=4.2, label=r"H-bonds / $\mathrm{H_2O}$")
     ax_c.set_xlim(0.0, 5.6)
     ax_c.set_ylim(0, 126)
     ax_c_hb.set_ylim(1.4, 4.1)
@@ -610,7 +663,57 @@ def generate_cat1_mgcl2_electrolyte(out_pdf: str, out_png: str) -> None:
 
     out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 1 (MgCl2 Electrolyte) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+
+    # Export OriginPro / Orange / Excel source data (3-row header: Long Name, Units, Comments)
+    origin_dir = Path(out_pdf).parent / "Origin_Source_Data"
+    s1_a = [
+        OriginColumn("Configuration Index", "", "80-frame benchmark", idx),
+        OriginColumn("Fx_DFT", "eV/A", "DFT (PBE)", f_dft_xyz[:, 0]),
+        OriginColumn("Fx_LegA", "eV/A", "12-6 LJ (Leg A)", f_base_xyz[:, 0]),
+        OriginColumn("Fx_O4", "eV/A", "O4 Fix (Ours)", f_o4_xyz[:, 0]),
+        OriginColumn("Fy_DFT", "eV/A", "DFT (PBE)", f_dft_xyz[:, 1]),
+        OriginColumn("Fy_LegA", "eV/A", "12-6 LJ (Leg A)", f_base_xyz[:, 1]),
+        OriginColumn("Fy_O4", "eV/A", "O4 Fix (Ours)", f_o4_xyz[:, 1]),
+        OriginColumn("Fz_DFT", "eV/A", "DFT (PBE)", f_dft_xyz[:, 2]),
+        OriginColumn("Fz_LegA", "eV/A", "12-6 LJ (Leg A)", f_base_xyz[:, 2]),
+        OriginColumn("Fz_O4", "eV/A", "O4 Fix (Ours)", f_o4_xyz[:, 2]),
+    ]
+    s1_b = [
+        OriginColumn("r", "nm", "Distance", r_nm),
+        OriginColumn("g(r)_Mg_Ow", "", "Mg-Ow (0.75r ECC)", gr_mgo),
+        OriginColumn("CN(r)_Mg_Ow", "", "Mg-Ow CN=5.72", cn_mgo),
+        OriginColumn("g(r)_Mg_Cl_100r", "", "Mg-Cl- (1.00r Raw)", gr_mgcl_100),
+        OriginColumn("CN(r)_Mg_Cl_100r", "", "Mg-Cl- CN=1.20", cn_mgcl_100),
+        OriginColumn("g(r)_Mg_Cl_075r", "", "Mg-Cl- (0.75r ECC)", gr_mgcl_075),
+        OriginColumn("CN(r)_Mg_Cl_075r", "", "Mg-Cl- CN=0.30", cn_mgcl_075),
+    ]
+    s1_c = [
+        OriginColumn("MgCl2 Concentration", "mol/kg", "Molality m", concs),
+        OriginColumn("SSIP Fraction", "%", "[Mg(H2O)6]2+", ssip_frac),
+        OriginColumn("CIP Fraction", "%", "[MgCl(H2O)5]+", cip_frac),
+        OriginColumn("AGG Fraction", "%", "[MgCl2(H2O)4]", agg_frac),
+        OriginColumn("HBonds per H2O", "", "<N_HB>", hbonds_per_w),
+    ]
+    env_clean = [g.replace("\n", " ") for g in env_groups]
+    s1_d = [
+        OriginColumn("Environment", "", "Coordination Shell", env_clean),
+        OriginColumn("Leg A RMSE", "eV/A", "IOD+OPC", real_rmse[:, 0]),
+        OriginColumn("Leg C RMSE", "eV/A", "TIP4P/2005", real_rmse[:, 1]),
+        OriginColumn("Leg D RMSE", "eV/A", "ECCions81", real_rmse[:, 2]),
+        OriginColumn("O4 Fix RMSE", "eV/A", "O4 Fix (Ours)", real_rmse[:, 3]),
+    ]
+    xlsx_1 = origin_dir / "Fig_Cat1_MgCl2_Origin_Data.xlsx"
+    write_origin_xlsx(xlsx_1, [
+        ("a_Tazi_Force_Trace", s1_a),
+        ("b_RDF_CN_Dual", s1_b),
+        ("c_Speciation_HBonds", s1_c),
+        ("d_6Env_Force_RMSE", s1_d),
+    ])
+    write_origin_csv(origin_dir / "Cat1_a_Tazi_Force_Trace.csv", s1_a)
+    write_origin_csv(origin_dir / "Cat1_b_RDF_CN_Dual.csv", s1_b)
+    write_origin_csv(origin_dir / "Cat1_c_Speciation_HBonds.csv", s1_c)
+    write_origin_csv(origin_dir / "Cat1_d_6Env_Force_RMSE.csv", s1_d)
+    print(f"Saved Category 1 (MgCl2 Electrolyte):\n  SVG    -> {out_svg}\n  Origin -> {xlsx_1}")
 
 
 # ==============================================================================
@@ -675,7 +778,7 @@ def generate_cat2_raman_prediction(out_pdf: str, out_png: str) -> None:
         top_label=r"$\mathrm{1\ m\ MgCl_2\ (SSIP)}$",
         bottom_label=r"$\mathrm{3\ m\ MgCl_2\ (CIP)}$",
         top_peaks=[(355, 0.80, r"$\nu_1\ (355)$"), (465, 0.62, r"$\nu_{\mathrm{lib}}$")],
-        bottom_peaks=[(262, 0.60, r"$\nu_{\mathrm{Mg-Cl}}$"), (343, 0.89, r"$\nu_1'$")],
+        bottom_peaks=[(262, 0.60, r"$\nu_{\mathrm{Mg\text{-}Cl}}$"), (343, 0.89, r"$\nu_1'$")],
         vertical_guides=[262, 355],
         xlim=(160, 620),
         ylim=(0.0, 1.36),
@@ -708,7 +811,48 @@ def generate_cat2_raman_prediction(out_pdf: str, out_png: str) -> None:
 
     out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 2 (Raman Spectroscopy Prediction) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+
+    origin_dir = Path(out_pdf).parent / "Origin_Source_Data"
+    s2_a = [
+        OriginColumn("Raman Shift", "cm-1", "Wavenumber", wn_full),
+        OriginColumn("DFT Intensity", "a.u.", "B3LYP/def2-TZVP", y_dft),
+        OriginColumn("ML Predicted Intensity", "a.u.", "2nd-Shell GINE/TNEP", y_pred),
+    ]
+    s2_bc = [
+        OriginColumn("Raman Shift", "cm-1", "Low-frequency region", wn_low),
+        OriginColumn("R_iso 1m", "a.u.", "1 m MgCl2 SSIP Isotropic", iso_1m),
+        OriginColumn("Intra 1m", "a.u.", "1st+2nd Shell Intra", intra_1m),
+        OriginColumn("VDOS 1m", "a.u.", "1 m VDOS", vdos_1m),
+        OriginColumn("R_iso 3m", "a.u.", "3 m MgCl2 CIP Isotropic", iso_3m),
+        OriginColumn("Intra 3m", "a.u.", "CIP [MgCl(H2O)5]+ Intra", intra_3m),
+        OriginColumn("VDOS 3m", "a.u.", "3 m VDOS", vdos_3m),
+    ]
+    sys_clean = ["H2O", "6W (1st)", "18W (2nd)", "MgCl+ / PO4"]
+    s2_d = [
+        OriginColumn("System", "", "Cluster / Bulk", sys_clean),
+        OriginColumn("Dipole RRMSE TNEP", "%", "TNEP / Equiv-alpha", mu_rrmse[:, 0]),
+        OriginColumn("Dipole RRMSE T-EANN", "%", "T-EANN", mu_rrmse[:, 1]),
+        OriginColumn("Dipole RRMSE GNN", "%", "Cluster GNN", mu_rrmse[:, 2]),
+        OriginColumn("Polarizability RRMSE TNEP", "%", "TNEP / Equiv-alpha", alpha_rrmse[:, 0]),
+        OriginColumn("Polarizability RRMSE T-EANN", "%", "T-EANN", alpha_rrmse[:, 1]),
+        OriginColumn("Polarizability RRMSE GNN", "%", "Cluster GNN", alpha_rrmse[:, 2]),
+    ]
+    s2_e = [
+        OriginColumn("F1 1st-Shell", "", "6W Cluster Peak Matching F1", f1_1st),
+        OriginColumn("F1 1st+2nd-Shell", "", "18W Cluster Peak Matching F1", f1_2nd),
+    ]
+    xlsx_2 = origin_dir / "Fig_Cat2_Raman_Origin_Data.xlsx"
+    write_origin_xlsx(xlsx_2, [
+        ("a_Mol2Raman_Overlay", s2_a),
+        ("bc_Raman_VDOS_Stack", s2_bc),
+        ("d_TNEP_Log_RRMSE", s2_d),
+        ("e_Mol2Raman_F1_Hist", s2_e),
+    ])
+    write_origin_csv(origin_dir / "Cat2_a_Mol2Raman_Overlay.csv", s2_a)
+    write_origin_csv(origin_dir / "Cat2_bc_Raman_VDOS_Stack.csv", s2_bc)
+    write_origin_csv(origin_dir / "Cat2_d_TNEP_Log_RRMSE.csv", s2_d)
+    write_origin_csv(origin_dir / "Cat2_e_Mol2Raman_F1_Hist.csv", s2_e)
+    print(f"Saved Category 2 (Raman Spectroscopy Prediction):\n  SVG    -> {out_svg}\n  Origin -> {xlsx_2}")
 
 
 # ==============================================================================
@@ -769,17 +913,23 @@ def generate_cat3_mlff_benchmark(out_pdf: str, out_png: str) -> None:
     df_lda_bias = -0.5235 * np.exp(-(r_ang - 2.15) / 0.32)
     df_o4_fix = -0.189 * np.exp(-(r_ang - 2.38) / 0.28) * np.cos((r_ang - 2.30) * 2.2)
 
+    xlim_c = (2.05, 3.75)
+    ylim_c = (-1.65, 2.55)
     ax_c.axhline(0.0, color="#666666", ls="--", lw=0.8)
     ax_c.axvspan(2.25, 2.75, color="#FEF2F2", alpha=0.85, zorder=0, label="CIP Inner Shell (<2.75 Å)")
-    ax_c.plot(r_ang, df_lj_only, color="#E41A1C", lw=1.35, label=r"Pure 12-6 LJ $r^{-12}$ (+1.65 eV/Å)")
-    ax_c.plot(r_ang, df_legA_tot, color="#D97706", lw=1.35, label="Leg A Total (+0.62 eV/Å, 90.1% out)")
-    ax_c.plot(r_ang, df_lda_bias, color="#9333EA", ls="-.", lw=1.2, label="LDA Overbinding (-0.52 eV/Å)")
-    ax_c.plot(r_ang, df_coul_only, color="#64748B", ls=":", lw=1.2, label="Pure Coulomb (-1.18 eV/Å)")
-    ax_c.plot(r_ang, df_o4_fix, color="#1E3A8A", lw=1.5, label="O4 Balanced Fix (-0.19 eV/Å)")
+    for y_arr, col_c, ls_c, lw_c, lbl_c in [
+        (df_lj_only, "#E41A1C", "-", 1.35, r"Pure 12-6 LJ $r^{-12}$ (+1.65 eV/Å)"),
+        (df_legA_tot, "#D97706", "-", 1.35, "Leg A Total (+0.62 eV/Å, 90.1% out)"),
+        (df_lda_bias, "#9333EA", "-.", 1.2, "LDA Overbinding (-0.52 eV/Å)"),
+        (df_coul_only, "#64748B", ":", 1.2, "Pure Coulomb (-1.18 eV/Å)"),
+        (df_o4_fix, "#1E3A8A", "-", 1.5, "O4 Balanced Fix (-0.19 eV/Å)"),
+    ]:
+        rx_c, ry_c = clip_curve_to_box(r_ang, y_arr, xlim_c, ylim_c)
+        ax_c.plot(rx_c, ry_c, color=col_c, ls=ls_c, lw=lw_c, label=lbl_c)
 
-    ax_c.set_xlim(2.05, 3.75)
-    ax_c.set_ylim(-1.65, 2.55)
-    ax_c.set_xlabel(r"$\mathrm{Mg^{2+}-Cl^-\ /\ O_w}$ distance $r\ (\mathrm{\AA})$")
+    ax_c.set_xlim(xlim_c)
+    ax_c.set_ylim(ylim_c)
+    ax_c.set_xlabel(r"$\mathrm{Mg^{2+}\text{-}Cl^-\ /\ O_w}$ distance $r\ (\mathrm{\AA})$")
     ax_c.set_ylabel(r"Radial force error $\Delta F_{\mathrm{radial}}\ (\mathrm{eV/\AA})$")
     leg_c = ax_c.legend(loc="upper right", frameon=True, edgecolor="black", fancybox=False, fontsize=5.8, borderpad=0.25)
     leg_c.get_frame().set_linewidth(0.7)
@@ -818,13 +968,54 @@ def generate_cat3_mlff_benchmark(out_pdf: str, out_png: str) -> None:
     ins_d.set_xticks(x_f)
     ins_d.set_xticklabels(funcs)
     ins_d.set_ylim(0, 5.4)
-    ins_d.set_title(r"$\mathrm{HOMO-LUMO}\ E_{\mathrm{gap}}\ (\mathrm{eV})$", fontsize=5.8, pad=2)
+    ins_d.set_title(r"$\mathrm{HOMO\text{-}LUMO}\ E_{\mathrm{gap}}\ (\mathrm{eV})$", fontsize=5.8, pad=2)
     ins_d.tick_params(axis="both", labelsize=5.4, length=2.0, direction="in")
     add_panel_label(ax_d, "d")
 
     out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 3 (Machine Learning Force Field) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+
+    origin_dir = Path(out_pdf).parent / "Origin_Source_Data"
+    s3_a = [
+        OriginColumn("F_DFT", "eV/A", "DFT (PBE) 3m Blind Test", f_dft),
+        OriginColumn("F_LegA", "eV/A", "Leg A Baseline (alpha=1.86)", f_base),
+        OriginColumn("F_O4", "eV/A", "O4 Fix (alpha=1.13)", f_o4),
+        OriginColumn("Abs_Error_O4", "eV/A", "|F_O4 - F_DFT|", np.abs(f_o4 - f_dft)),
+    ]
+    s3_b = [
+        OriginColumn("N_train", "", "Training configurations N", n_train),
+        OriginColumn("MAE Invariant L=0", "eV/A", "s = -0.28", mae_l0),
+        OriginColumn("MAE Equivariant L=1", "eV/A", "s = -0.48", mae_l1),
+        OriginColumn("MAE DBMLFF + O4", "eV/A", "s = -0.61", mae_dbmlff),
+    ]
+    s3_c = [
+        OriginColumn("r", "A", "Mg2+-Cl- / Ow distance", r_ang),
+        OriginColumn("dF Pure 12-6 LJ", "eV/A", "+1.65 eV/A repulsion", df_lj_only),
+        OriginColumn("dF Leg A Total", "eV/A", "+0.62 eV/A (90.1% out)", df_legA_tot),
+        OriginColumn("dF LDA Overbinding", "eV/A", "-0.52 eV/A", df_lda_bias),
+        OriginColumn("dF Pure Coulomb", "eV/A", "-1.18 eV/A", df_coul_only),
+        OriginColumn("dF O4 Balanced Fix", "eV/A", "-0.19 eV/A", df_o4_fix),
+    ]
+    s3_d = [
+        OriginColumn("ECUT", "Ry", "Plane-wave cutoff", ecuts),
+        OriginColumn("Abs_Delta_E", "meV/atom", "Energy error vs 100 Ry", delta_e),
+        OriginColumn("Force_RMSE", "eV/A", "Force RMSE vs 100 Ry", rmse_f),
+        OriginColumn("Functional", "", "Bandgap inset", funcs),
+        OriginColumn("E_gap", "eV", "HOMO-LUMO gap", gaps),
+        OriginColumn("E_gap_err", "eV", "Std dev", gap_errs),
+    ]
+    xlsx_3 = origin_dir / "Fig_Cat3_MLFF_Origin_Data.xlsx"
+    write_origin_xlsx(xlsx_3, [
+        ("a_3m_Parity_Scatter", s3_a),
+        ("b_Learning_Curves", s3_b),
+        ("c_ShortRange_Decomp", s3_c),
+        ("d_PWmat_Convergence", s3_d),
+    ])
+    write_origin_csv(origin_dir / "Cat3_a_3m_Parity_Scatter.csv", s3_a)
+    write_origin_csv(origin_dir / "Cat3_b_Learning_Curves.csv", s3_b)
+    write_origin_csv(origin_dir / "Cat3_c_ShortRange_Decomp.csv", s3_c)
+    write_origin_csv(origin_dir / "Cat3_d_PWmat_Convergence.csv", s3_d)
+    print(f"Saved Category 3 (Machine Learning Force Field):\n  SVG    -> {out_svg}\n  Origin -> {xlsx_3}")
 
 
 def generate_all_three_categories(out_dir: Path) -> None:

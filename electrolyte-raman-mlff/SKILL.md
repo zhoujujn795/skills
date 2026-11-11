@@ -16,7 +16,12 @@ This is a **standalone, project-specific plotting skill** decoupled from generic
 - **Closed 4-Sided Axes Box**: `axes.spines.top = True`, `axes.spines.right = True`, `axes.linewidth = 0.9`.
 - **Inward-Pointing Ticks**: `xtick.direction = "in"`, `ytick.direction = "in"`.
 - **Crisp Rectangular Legend**: `legend.frameon = True`, `legend.edgecolor = "black"`, `legend.fancybox = False`.
-- **Editable Vector Text**: `pdf.fonttype = 42`, `ps.fonttype = 42`, `svg.fonttype = "none"`, `savefig.dpi = 450`.
+- **PowerPoint Zero-Garbled-Text (`零乱码`) Editable SVG**:
+  - Forces `mathtext.fontset = "custom"` (`Arial` / `Arial:italic` / `Arial:bold`, `fallback = "stixsans"`), eliminating missing `'DejaVu Sans'` and legacy TeX encodings (`cmex10`/`cmsy10`).
+  - `scripts/ppt_origin_export.py::sanitize_svg_for_ppt()` sorts `<tspan>` glyphs left-to-right by `x` (fixing Matplotlib's font-grouped XML order that scrambles formulas in PowerPoint), normalizes math codepoints (`\u2212 -> '-'`, `\u27e8/\u27e9 -> '<'/'>'`, `\u22c5 -> '·'`, `\u2032 -> "'"`) to 100% `Arial.ttf`-supported glyphs, flattens all `<tspan>` tags into standalone `<text x="..." y="...">` elements, and strips `<clipPath>` black-box masks after pre-clipping data with `clip_curve_to_box()` / `clip_scatter_to_box()`.
+  - Automatically verified on every save by `audit_svg_ppt_compatibility()`.
+- **OriginPro / Orange / Excel Native Source Data Export**:
+  - Automatically writes `Origin_Source_Data/*_Origin_Data.xlsx` multi-sheet workbooks + UTF-8-BOM `.csv` files with OriginPro's 3-row metadata header (`Long Name`, `Units`, `Comments / Legend`).
 
 ## Core Plotting Functions (`scripts/electrolyte_plots.py`)
 
@@ -34,8 +39,8 @@ This is a **standalone, project-specific plotting skill** decoupled from generic
 
 ## Usage
 
-Run the turnkey generator to produce all three category multi-panel figures (`PDF` + `450 DPI PNG`):
+Run the turnkey generator to produce all three category multi-panel figures (`PPT-safe SVG` + `PDF` + `450 DPI PNG` + `Origin_Source_Data/*.xlsx & *.csv`):
 ```bash
 /Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/electrolyte_plots.py /Users/zhoujun/Documents/科研/01_开题报告
 ```
-See [`references/electrolyte_spectroscopy_guide.md`](references/electrolyte_spectroscopy_guide.md) for full details.
+See [`references/electrolyte_spectroscopy_guide.md`](references/electrolyte_spectroscopy_guide.md) and [`scripts/ppt_origin_export.py`](scripts/ppt_origin_export.py) for full details.
