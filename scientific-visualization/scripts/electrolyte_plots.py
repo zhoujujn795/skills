@@ -445,11 +445,11 @@ def plot_force_parity_with_inset(
     if f_baseline is not None:
         ax.scatter(
             f_dft, f_baseline, s=4, c="#E67E45", alpha=0.22, edgecolors="none",
-            rasterized=True, zorder=2, label=f"Leg A (RMSE={rmse_base:.2f}, α=1.86)"
+            rasterized=False, zorder=2, label=f"Leg A (RMSE={rmse_base:.2f}, α=1.86)"
         )
     ax.scatter(
         f_dft, f_model, s=5, c=color, alpha=0.40, edgecolors="none",
-        rasterized=True, zorder=3, label=f"O4 Fix (RMSE={rmse_val:.2f}, α=1.13)"
+        rasterized=False, zorder=3, label=f"O4 Fix (RMSE={rmse_val:.2f}, α=1.13)"
     )
     ax.set_xlim(lim)
     ax.set_ylim(lim[0], lim[1] + 4.2)  # Extra top headroom for collision-free legend & header
@@ -508,9 +508,17 @@ def plot_mace_nequip_learning_curve(
     leg.get_frame().set_linewidth(0.7)
 
 
-# ==============================================================================
-# Category 1 Showcase Generator: MgCl2水系电解质
-# ==============================================================================
+def save_publication_figure(fig: plt.Figure, out_pdf: str, out_png: str, out_svg: str | None = None) -> str:
+    """
+    Always export editable vector SVG (svg.fonttype='none') alongside PDF (Type 42) and 450 DPI PNG.
+    """
+    if out_svg is None:
+        out_svg = str(Path(out_pdf).with_suffix(".svg"))
+    os.makedirs(os.path.dirname(os.path.abspath(out_svg)), exist_ok=True)
+    fig.savefig(out_svg)
+    fig.savefig(out_pdf, dpi=450)
+    fig.savefig(out_png, dpi=450)
+    return out_svg
 
 def generate_cat1_mgcl2_electrolyte(out_pdf: str, out_png: str) -> None:
     """
@@ -600,11 +608,9 @@ def generate_cat1_mgcl2_electrolyte(out_pdf: str, out_png: str) -> None:
     )
     add_panel_label(ax_d, "d", x=-0.14, y=1.04)
 
-    os.makedirs(os.path.dirname(os.path.abspath(out_pdf)), exist_ok=True)
-    fig.savefig(out_pdf, dpi=450)
-    fig.savefig(out_png, dpi=450)
+    out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 1 (MgCl2 Electrolyte) figure:\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+    print(f"Saved Category 1 (MgCl2 Electrolyte) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
 
 
 # ==============================================================================
@@ -700,11 +706,9 @@ def generate_cat2_raman_prediction(out_pdf: str, out_png: str) -> None:
     plot_mol2raman_f1_histogram(ax_e, f1_1st, f1_2nd)
     add_panel_label(ax_e, "e")
 
-    os.makedirs(os.path.dirname(os.path.abspath(out_pdf)), exist_ok=True)
-    fig.savefig(out_pdf, dpi=450)
-    fig.savefig(out_png, dpi=450)
+    out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 2 (Raman Spectroscopy Prediction) figure:\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+    print(f"Saved Category 2 (Raman Spectroscopy Prediction) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
 
 
 # ==============================================================================
@@ -818,11 +822,9 @@ def generate_cat3_mlff_benchmark(out_pdf: str, out_png: str) -> None:
     ins_d.tick_params(axis="both", labelsize=5.4, length=2.0, direction="in")
     add_panel_label(ax_d, "d")
 
-    os.makedirs(os.path.dirname(os.path.abspath(out_pdf)), exist_ok=True)
-    fig.savefig(out_pdf, dpi=450)
-    fig.savefig(out_png, dpi=450)
+    out_svg = save_publication_figure(fig, out_pdf, out_png)
     plt.close(fig)
-    print(f"Saved Category 3 (Machine Learning Force Field) figure:\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
+    print(f"Saved Category 3 (Machine Learning Force Field) figure:\n  SVG -> {out_svg}\n  PDF -> {out_pdf}\n  PNG -> {out_png}")
 
 
 def generate_all_three_categories(out_dir: Path) -> None:
