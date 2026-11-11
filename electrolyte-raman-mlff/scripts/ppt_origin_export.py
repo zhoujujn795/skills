@@ -54,6 +54,7 @@ UNICODE_TO_ARIAL_MAP: dict[str, str] = {
     "\u232a": ">",       # RIGHT-POINTING ANGLE BRACKET
     "\u22c5": "\u00b7",  # DOT OPERATOR -> Latin-1 MIDDLE DOT (present in Arial.ttf)
     "\u2219": "\u00b7",  # BULLET OPERATOR -> Latin-1 MIDDLE DOT
+    "\u22ef": "\u00b7\u00b7\u00b7",  # MIDLINE HORIZONTAL ELLIPSIS (\cdots) -> 3 Latin-1 middle dots
     "\u2032": "'",       # PRIME -> ASCII apostrophe
     "\u2033": "''",      # DOUBLE PRIME
     "\xa0": " ",         # NO-BREAK SPACE -> ASCII space
@@ -643,3 +644,154 @@ def write_origin_xlsx(xlsx_path: str | Path, sheets: list[tuple[str, Sequence[Or
         zf.writestr("xl/_rels/workbook.xml.rels", "\n".join(wb_rels))
         for path_in_zip, xml_content in sheet_xmls.items():
             zf.writestr(path_in_zip, xml_content)
+
+
+def build_editable_svg_pptx(
+    pptx_out_path: str | Path,
+    slides_spec: Sequence[dict[str, Any]],
+) -> Path:
+    """
+    Build a 16:9 Clean Academic PowerPoint deck (`13.333" x 7.5"`) where every figure is embedded
+    as a native Office 2016+ `<asvg:svgBlip>` vector graphic (paired with a 450 DPI PNG fallback) so
+    users can right-click -> 'Convert to Shape (转换为形状)' in PowerPoint with zero garbled text.
+
+    Each item in `slides_spec` is a dict:
+      {
+        "title": str,
+        "svg_path": str | Path,
+        "png_path": str | Path,
+        "takeaways": list[str],   # 3-4 concise academic bullets (<= 380 chars total on slide)
+        "footer": str,
+      }
+    """
+    from PIL import Image
+    from pptx import Presentation
+    from pptx.dml.color import RGBColor
+    from pptx.opc.constants import RELATIONSHIP_TYPE as RT
+    from pptx.opc.package import Part
+    from pptx.opc.packuri import PackURI
+    from pptx.oxml import parse_xml
+    from pptx.util import Inches, Pt
+
+    out_path = Path(pptx_out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    prs = Presentation()
+    prs.slide_width = Inches(13.333)
+    prs.slide_height = Inches(7.500)
+    blank_layout = prs.slide_layouts[6]
+
+    navy = RGBColor(0x1E, 0x3A, 0x5F)
+    ink = RGBColor(0x1F, 0x29, 0x37)
+    muted = RGBColor(0x6B, 0x72, 0x80)
+    accent = RGBColor(0xC2, 0x41, 0x0C)
+
+    def _set_cjk_run_font(run: Any, size_pt: float, color: RGBColor, bold: bool = False) -> None:
+        run.font.name = "Arial"
+        run.font.size = Pt(size_pt)
+        run.font.bold = bold
+        run.font.color.rgb = color
+        rPr = run._r.get_or_add_rPr()
+        for existing_ea in list(rPr.findall("{http://schemas.openxmlformats.org/drawingml/2006/main}ea")):
+            rPr.remove(existing_ea)
+        rPr.append(parse_xml('<a:ea xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" typeface="Microsoft YaHei"/>'))
+
+    total = len(slides_spec)
+    for idx, spec in enumerate(slides_spec, start=1):
+        slide = prs.slides.add_slide(blank_layout)
+
+        # 1. Left-aligned single-line academic title
+        tb_title = slide.shapes.add_textbox(Inches(0.60), Inches(0.32), Inches(12.10), Inches(0.58))
+        tf_t = tb_title.text_frame
+        tf_t.word_wrap = True
+        tf_t.margin_left = tf_t.margin_right = tf_t.margin_top = tf_t.margin_bottom = 0
+        p_t = tf_t.paragraphs[0]
+        r_t = p_t.add_run()
+        r_t.text = spec["title"]
+        _set_cjk_run_font(r_t, 22.0, navy, bold=True)
+
+        # 2. Native SVG + 450 DPI PNG picture in left/main column (x=0.60"..7.75", y=1.02"..6.68")
+        svg_p = Path(spec["svg_path"])
+        png_p = Path(spec["png_path"])
+        with Image.open(png_p) as im:
+            im_w, im_h = im.size
+        box_x, box_y, max_w, max_h = 0.60, 1.02, 7.15, 5.66
+        aspect = im_w / max(im_h, 1)
+        if max_w / max_h > aspect:
+            pic_h = max_h
+            pic_w = pic_h * aspect
+        else:
+            pic_w = max_w
+            pic_h = pic_w / aspect
+        px = box_x + 0.5 * (max_w - pic_w)
+        py = box_y + 0.5 * (max_h - pic_h)
+
+        pic = slide.shapes.add_picture(str(png_p), Inches(px), Inches(py), width=Inches(pic_w), height=Inches(pic_h))
+        svg_part = Part(
+            PackURI(f"/ppt/media/editable_fig_{idx}.svg"),
+            "image/svg+xml",
+            prs.part.package,
+            blob=svg_p.read_bytes(),
+        )
+        svg_rid = slide.part.relate_to(svg_part, RT.IMAGE)
+        blip = pic._element.xpath(".//a:blip")[0]
+        ext_lst = blip.find("{http://schemas.openxmlformats.org/drawingml/2006/main}extLst")
+        if ext_lst is None:
+            ext_lst = parse_xml('<a:extLst xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"/>')
+            blip.append(ext_lst)
+        ext_lst.append(
+            parse_xml(
+                f'<a:ext xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" '
+                f'uri="{{96DAC541-7B7A-43D3-8B79-37D633B846F1}}">'
+                f'<asvg:svgBlip xmlns:asvg="http://schemas.microsoft.com/office/drawing/2016/SVG/main" '
+                f'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" '
+                f'r:embed="{svg_rid}"/></a:ext>'
+            )
+        )
+
+        # 3. Right-hand academic takeaway column (x=8.05"..12.75", y=1.18"..6.40")
+        tb_body = slide.shapes.add_textbox(Inches(8.05), Inches(1.18), Inches(4.68), Inches(5.25))
+        tf_b = tb_body.text_frame
+        tf_b.word_wrap = True
+        tf_b.margin_left = tf_b.margin_right = tf_b.margin_top = tf_b.margin_bottom = 0
+
+        p_hdr = tf_b.paragraphs[0]
+        p_hdr.space_after = Pt(10)
+        r_hdr = p_hdr.add_run()
+        r_hdr.text = "核心物理结论与编辑说明"
+        _set_cjk_run_font(r_hdr, 16.0, accent, bold=True)
+
+        for b_line in spec.get("takeaways", []):
+            p_item = tf_b.add_paragraph()
+            p_item.space_after = Pt(10)
+            p_item.line_spacing = 1.25
+            r_item = p_item.add_run()
+            r_item.text = b_line
+            _set_cjk_run_font(r_item, 13.5, ink, bold=False)
+
+        # 4. Clean footer at y >= 6.88" (>= 0.88 * 7.5" = 6.60")
+        tb_foot = slide.shapes.add_textbox(Inches(0.60), Inches(6.92), Inches(12.13), Inches(0.36))
+        tf_f = tb_foot.text_frame
+        tf_f.word_wrap = False
+        tf_f.margin_left = tf_f.margin_right = tf_f.margin_top = tf_f.margin_bottom = 0
+        p_f = tf_f.paragraphs[0]
+        r_f = p_f.add_run()
+        r_f.text = f"{spec.get('footer', '')}    |    {idx} / {total}"
+        _set_cjk_run_font(r_f, 10.5, muted, bold=False)
+
+    prs.save(str(out_path))
+
+    # Ensure [Content_Types].xml registers Default Extension="svg" ContentType="image/svg+xml"
+    tmp_path = out_path.with_suffix(".tmp.pptx")
+    with zipfile.ZipFile(out_path, "r") as zin, zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zout:
+        for item in zin.infolist():
+            data = zin.read(item.filename)
+            if item.filename == "[Content_Types].xml" and b'Extension="svg"' not in data:
+                data = data.replace(
+                    b"</Types>",
+                    b'<Default Extension="svg" ContentType="image/svg+xml"/></Types>',
+                )
+            zout.writestr(item, data)
+    tmp_path.replace(out_path)
+    return out_path
+

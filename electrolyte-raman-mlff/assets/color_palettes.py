@@ -169,6 +169,32 @@ BALOS_HBOND_SHELLS: Final = [
     "#FFF9A6",  # Bulk-type water / SSIP outer shell (Soft Yellow, use with black 0.8pt outline)
 ]
 
+# 5. Jiang et al., J. Energy Chem. 109, 466–478 (2025) Table 1 & Fig. 2a — 3D CPK Glossy Atom Shading
+JIANG_CPK_3D: Final = {
+    "Mg": {"core": "#E67E22", "mid": "#F39C12", "spec": "#FEF5E7", "rim": "#7E3F08", "radius": 0.44},
+    "Cl": {"core": "#27AE60", "mid": "#58D68D", "spec": "#EAFAF1", "rim": "#145A32", "radius": 0.48},
+    "O":  {"core": "#DC2626", "mid": "#F87171", "spec": "#FEE2E2", "rim": "#7F1D1D", "radius": 0.34},
+    "H":  {"core": "#F1F5F9", "mid": "#FFFFFF", "spec": "#FFFFFF", "rim": "#475569", "radius": 0.21},
+    "P":  {"core": "#8E44AD", "mid": "#BB8FCE", "spec": "#F5EEF8", "rim": "#4A235A", "radius": 0.42},
+}
+
+# 6. Tazi et al., J. Chem. Phys. 136, 114507 (2012) Fig. 2b — Short-Range Repulsive Potential Wall
+TAZI_REPULSIVE_WALL: Final = {
+    "ipmv":     "#DC2626",  # Ultra-steep iPMV 0.75 wall (Crimson Red)
+    "legA":     "#D97706",  # Baseline Merz IOD 0.80 + OPC wall (Amber Orange)
+    "o4_bal":   "#1E3A8A",  # Proposed O4 Balanced softened wall (Deep Academic Navy)
+    "o4_soft":  "#0284C7",  # O4 Soft OPC variant (Cerulean Blue)
+    "eccions":  "#7C3AED",  # ECCions81 inner-shell collapse (Royal Violet)
+}
+
+# 7. Zheng et al. (ByteFF-Pol), Nat. Commun. (2026) Fig. 4a,f — Density & Transport Parity
+BYTEFF_DENSITY_MODELS: Final = {
+    "amber_100q": "#3B82F6",  # Unscaled 1.0q Classical Force Field (Steel Blue)
+    "legA_080q":  "#F97316",  # Merz IOD 0.80q Baseline (Warm Orange)
+    "eccions81":  "#DC2626",  # ECCions81 Over-contracted (Brick Red)
+    "o4_fix":     "#16A34A",  # Proposed O4 Balanced / DBMLFF (Emerald Green)
+}
+
 PALETTES: Final = {
     "academic_mono_slate": ACADEMIC_MONO_SLATE,
     "pan_galli_raman": PAN_GALLI_RAMAN,
