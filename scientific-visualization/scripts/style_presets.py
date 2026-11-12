@@ -189,7 +189,7 @@ def available_palettes() -> dict[str, list[str]]:
 def get_style(
     style_name: str = "default",
     *,
-    palette_name: str = "academic_mono_slate",
+    palette_name: str = "academic_navy_orange",
 ) -> dict[str, Any]:
     """Return a validated plain rcParams dictionary without global mutation."""
     if style_name not in STYLE_OVERRIDES:
