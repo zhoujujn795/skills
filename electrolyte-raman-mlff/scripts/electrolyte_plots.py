@@ -1036,7 +1036,7 @@ def generate_all_three_categories(out_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    target_dir = Path("/Users/zhoujun/Documents/科研/01_开题报告")
+    target_dir = Path("./output_figures")
     if len(sys.argv) > 1:
         target_dir = Path(sys.argv[1])
     generate_all_three_categories(target_dir)

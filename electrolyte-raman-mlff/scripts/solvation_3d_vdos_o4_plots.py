@@ -30,6 +30,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 import sys
 from pathlib import Path
 from typing import Any, Sequence
@@ -1057,7 +1058,7 @@ def generate_real_fig1_3d_clusters_and_boxes(out_pdf: str, out_png: str) -> None
 def generate_real_fig2_water_goo_and_vdos(
     out_pdf: str,
     out_png: str,
-    report_json_path: str | Path = "/Users/zhoujun/Documents/科研/04_电解液模拟数据_155/benchmark_comparison_report.json",
+    report_json_path: str | Path | None = None,
 ) -> None:
     """
     Generate Figure 2 of the Extended Suite (100% Real SG15-PBE AIMD Data, Wang Nat. Commun. 2026 Fig. 3 style):
@@ -1068,7 +1069,7 @@ def generate_real_fig2_water_goo_and_vdos(
       Panel d: Real `0, 1, 3, 5 m` Low-Frequency Coordination & Librational VDOS (`120-960 cm-1`) waterfall + shift arrow.
     """
     apply_electrolyte_nature_style()
-    rep_path = Path(report_json_path)
+    rep_path = Path(report_json_path or os.environ.get("ELECTROLYTE_BENCHMARK_JSON", "./benchmark_comparison_report.json"))
     with rep_path.open() as f:
         rep = json.load(f)
 
@@ -1290,7 +1291,7 @@ def generate_real_fig3_repulsive_wall_and_density(out_pdf: str, out_png: str) ->
     rho_ecc81 = np.array([0.997, 1.042, 1.086, 1.168, 1.246, 1.318, 1.385])
     rho_o4_bal = np.array([0.997, 1.036, 1.073, 1.144, 1.211, 1.274, 1.334])
 
-    npt_json = Path("/Users/zhoujun/Documents/科研/04_电解液模拟数据_155/o4_npt_density_results.json")
+    npt_json = Path(os.environ.get("O4_NPT_DENSITY_JSON", "./o4_npt_density_results.json"))
     if npt_json.exists():
         npt_data = json.loads(npt_json.read_text())
         molalities = np.asarray(npt_data["molalities_m"], dtype=float)
@@ -1503,7 +1504,7 @@ def generate_all_extended_real_figures(out_dir: Path) -> None:
 
 
 if __name__ == "__main__":
-    target = Path("/Users/zhoujun/Documents/科研/01_开题报告")
+    target = Path("./output_figures")
     if len(sys.argv) > 1:
         target = Path(sys.argv[1])
     generate_all_extended_real_figures(target)

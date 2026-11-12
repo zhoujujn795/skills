@@ -18,7 +18,7 @@ Implements:
      - Paired `verify_checklist.md` generator (Ghost Deck Test + Data Provenance + Advisor Q&A).
 
 CLI Usage:
-    /Users/zhoujun/miniconda3/bin/python3 scripts/group_meeting_builder.py --demo /path/to/out_dir
+    python3 scripts/group_meeting_builder.py --demo /path/to/out_dir
 """
 
 from __future__ import annotations
@@ -169,7 +169,6 @@ def _load_upstream_ppt_origin_export() -> Any | None:
     here = Path(__file__).resolve()
     candidates = [
         here.parents[2] / "electrolyte-raman-mlff" / "scripts" / "ppt_origin_export.py",
-        Path("/Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/ppt_origin_export.py"),
     ]
     for path in candidates:
         if path.is_file():
@@ -1413,9 +1412,9 @@ class GroupMeetingDeck:
                 "## 4. 交付双门禁与视觉回看自检命令",
                 "",
                 "```bash",
-                f"python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/layout_audit.py {pptx_path}",
-                f"/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/office/validate.py {pptx_path}",
-                f"/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/office/soffice.py --headless --convert-to pdf {pptx_path}",
+                f"python3 ../pptx/scripts/layout_audit.py {pptx_path}",
+                f"python3 ../pptx/scripts/office/validate.py {pptx_path}",
+                f"python3 ../pptx/scripts/office/soffice.py --headless --convert-to pdf {pptx_path}",
                 "```",
                 "",
                 "- [x] 纯白底 `#FFFFFF`，零校徽、零水印、零顶底彩色横幅、零圆角灰底卡片堆叠",
@@ -1645,7 +1644,7 @@ def build_demo_deck(out_dir: str | Path) -> tuple[Path, Path]:
     deck.add_l1_cover_tldr(
         date_label="2026-11-12  ·  Weekly Group Meeting",
         title="水系 MgCl₂ 机器学习力场 O4 短程修正与拉曼验证进展",
-        presenter_line="汇报人：周俊  |  多尺度分子模拟与原位光谱组",
+        presenter_line="汇报人：姓名  |  课题组 / 实验室",
         tldr_items=[
             ("进展", "完成 O4 短程排斥势与 DBMLFF 耦合重训，跑通 0.5–5.0 M 正向 NPT 验证。"),
             ("发现", "4 M 测试力 RMSE 降至 {{28.4 meV/Å}}，配位数由 7.18 恢复至 {{5.88}}。"),

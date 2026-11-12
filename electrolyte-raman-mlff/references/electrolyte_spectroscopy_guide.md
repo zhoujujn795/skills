@@ -75,8 +75,8 @@ This reference documents the complete 6-module top-journal plotting conventions 
 
 ```bash
 # 1. Generate Modules 1-3 (Fig_Cat1 .. Fig_Cat3)
-/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/electrolyte_plots.py /Users/zhoujun/Documents/科研/01_开题报告
+python3 scripts/electrolyte_plots.py ./output_figures
 
 # 2. Generate Modules 4-6 (Fig_Real1 .. Fig_Real3) + Unified 6-Slide Native-SVG Editable PPTX
-/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/solvation_3d_vdos_o4_plots.py /Users/zhoujun/Documents/科研/01_开题报告
+python3 scripts/solvation_3d_vdos_o4_plots.py ./output_figures
 ```

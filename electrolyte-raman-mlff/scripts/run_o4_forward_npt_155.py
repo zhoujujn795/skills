@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 r"""
-Turnkey ~20-Minute GROMACS Forward-NPT Density & RDF Closed-Loop Validation on `server155`.
+Turnkey ~20-Minute GROMACS Forward-NPT Density & RDF Closed-Loop Validation.
 
 Runs 298.15 K / 1 bar NPT classical MD across `0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0 m` MgCl2(aq)
 (500 H2O + N MgCl2 cubic box) comparing:
@@ -12,7 +12,7 @@ Runs 298.15 K / 1 bar NPT classical MD across `0, 0.5, 1.0, 2.0, 3.0, 4.0, 5.0 m
 Exports `o4_npt_density_results.json` (`Sim. Density vs. Exp. Density [g/mL]` + `r_Mg-O` & `CN_Mg-O`),
 which is automatically picked up by `solvation_3d_vdos_o4_plots.py` (Figure Real3 Panel c, ByteFF-Pol style).
 
-Usage on `server155`:
+Usage:
     python3 run_o4_forward_npt_155.py --workdir /tmp/o4_npt_bench --out o4_npt_density_results.json --ntomp 8
 """
 

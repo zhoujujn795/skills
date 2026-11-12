@@ -52,11 +52,11 @@ This is a **standalone, project-specific plotting skill** decoupled from generic
 
 Generate all 6 publication-grade figures (`PPT-safe SVG` + `PDF` + `450 DPI PNG` + `Origin_Source_Data/*.xlsx & *.csv` + 6-slide Native-SVG `.pptx`):
 ```bash
-/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/electrolyte_plots.py /Users/zhoujun/Documents/科研/01_开题报告
-/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/solvation_3d_vdos_o4_plots.py /Users/zhoujun/Documents/科研/01_开题报告
+python3 scripts/electrolyte_plots.py ./output_figures
+python3 scripts/solvation_3d_vdos_o4_plots.py ./output_figures
 ```
-Run ~20-minute GROMACS forward-NPT density validation on `server155`:
+Run ~20-minute GROMACS forward-NPT density validation on a Linux workstation:
 ```bash
-python3 /Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/run_o4_forward_npt_155.py --workdir /tmp/o4_npt_bench --out o4_npt_density_results.json --ntomp 8
+python3 scripts/run_o4_forward_npt_155.py --workdir /tmp/o4_npt_bench --out o4_npt_density_results.json --ntomp 8
 ```
 See [`references/electrolyte_spectroscopy_guide.md`](references/electrolyte_spectroscopy_guide.md) and [`scripts/ppt_origin_export.py`](scripts/ppt_origin_export.py) for full details.

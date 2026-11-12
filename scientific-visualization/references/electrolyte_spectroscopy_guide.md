@@ -45,5 +45,5 @@ This reference documents the complete 3-category top-journal plotting convention
 
 Generate all three category figures (`PDF` + `450 DPI PNG`) in one command:
 ```bash
-/Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/scientific-visualization/scripts/electrolyte_plots.py /Users/zhoujun/Documents/科研/01_开题报告
+python3 scripts/electrolyte_plots.py ./output_figures
 ```

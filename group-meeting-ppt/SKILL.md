@@ -74,7 +74,7 @@ license: MIT
 | `"L6_left_fig"` | `(5.85, 5.00)` | `L6-split` 左图右三线表配图槽 |
 
 ### 2. 双轨 `<asvg:svgBlip>` 零乱码矢量流水线
-`save_slide_svg_and_png(fig, out_stem)` 自动串联 `/Users/zhoujun/.cc-switch/skills/electrolyte-raman-mlff/scripts/ppt_origin_export.py`（若独立运行则自动启用内置无依赖 fallback）：
+`save_slide_svg_and_png(fig, out_stem)` 自动串联同级 `../electrolyte-raman-mlff/scripts/ppt_origin_export.py`（若独立运行则自动启用内置无依赖 fallback）：
 1. **数据预裁剪**：绘图期调用 `clip_curve_to_box()` / `clip_scatter_to_box()` 将数据严格裁剪至坐标轴框内。
 2. **SVG 展平净化 (`sanitize_svg_for_ppt`)**：按 `x` 坐标重排 Matplotlib 公式 `<tspan>` 并合并展平为 **0 个 `<tspan>`** 的独立 `<text>`，归一化 `Arial.ttf` 缺失数学符号（`\u2212 -> '-'` 等），剥离全部 `<clipPath>` 黑色遮罩块。
 3. **兼容性硬断言 (`audit_svg_ppt_compatibility`)**：强制验证 `tspan_count == 0`、`clip_path_count == 0`、`bad_fonts == []`、`missing_arial_glyphs == []`。
@@ -86,9 +86,7 @@ license: MIT
 
 ### 1. 一键运行 7 页完整科研组会样片 (`L1`–`L7`)
 ```bash
-/Users/zhoujun/miniconda3/bin/python3 \
-  /Users/zhoujun/.cc-switch/skills/group-meeting-ppt/scripts/group_meeting_builder.py \
-  --demo /path/to/output_dir
+python3 <skill_dir>/scripts/group_meeting_builder.py --demo /path/to/output_dir
 ```
 
 ### 2. 在自定义周报脚本中复用 `GroupMeetingDeck`
@@ -97,7 +95,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import sys
 
-sys.path.insert(0, "/Users/zhoujun/.cc-switch/skills/group-meeting-ppt/scripts")
+sys.path.insert(0, "<skill_dir>/scripts")
 from group_meeting_builder import (
     SLIDE_SLOT_SIZES,
     PALETTE_HEX,
@@ -147,11 +145,11 @@ deck.write_verify_checklist(
 
 1. **版面溢出、色相、字体与三线表防碰撞审计（必须 `exit 0` 且零 `[FAIL]`）**：
    ```bash
-   python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/layout_audit.py path/to/deck.pptx
+   python3 ../pptx/scripts/layout_audit.py path/to/deck.pptx
    ```
 2. **OOXML XSD Schema、关系引用与母版主题合法性校验（必须 `All validations PASSED!`）**：
    ```bash
-   /Users/zhoujun/miniconda3/bin/python3 /Users/zhoujun/.cc-switch/skills/pptx/scripts/office/validate.py -v path/to/deck.pptx
+   python3 ../pptx/scripts/office/validate.py -v path/to/deck.pptx
    ```
 3. **图表视觉回看巡检**：直接检视 `figures/*.png`（若环境安装了 LibreOffice，额外执行 `soffice.py --headless --convert-to pdf` + `pdftoppm -png -r 150` 查看整页合成图），确认无图例压线、无箭头指空、双图 `ylim` 一致。
 4. **配套交付 `verify_checklist.md`**：与 `.pptx` 同目录输出，必须包含 **Ghost Deck 标题链与预计口头时长**、**数据/样本量/误差棒定义溯源表**，以及 **3–5 个导师高频追问预判与定量应答**。
