@@ -56,12 +56,13 @@ Prefer position on a common scale. Before coding, check:
 - **Dual axes:** prefer aligned panels; if unavoidable, justify units and do not engineer apparent correlation.
 - **Images:** preserve originals, disclose whole-image adjustments, show scale bars, and avoid clipped/erased background.
 
-### 3. Design accessibility & Monochromatic Academic Aesthetic in, not after
+### 3. Design accessibility and a restrained two-color aesthetic in, not after
 
-- **DEFAULT PALETTE: Monochromatic Slate-Navy (`ACADEMIC_MONO_SLATE`)**:
-  - Avoid "rainbow" plots (mixing bright orange, yellow, green, pink, and blue in the same chart).
-  - Instead, assign **neutral cool-gray / slate tones (`#94A3B8`, `#64748B`, `#475569`) to baseline/control methods**, and reserve the **deep academic navy (`#1E3A5F`)** for the **proposed method (`Ours / O4`)** or key physical signal, and use the deck/figure accent `#C2410C` for the single thing to highlight. With more than 4 comparable series, switch to the Okabe-Ito palette (`okabe_ito_on_white`) instead of stacking grays that cannot be told apart; keep markers and line styles as redundant cues.
-  - Differentiate series primarily via **hue value (light-to-dark luminance) + distinct marker shapes (`o`, `s`, `^`, `D`) + line styles (`-`, `--`, `:`)** so the figure looks like a top-tier Nature/JACS print figure and remains 100% clear in grayscale.
+- **DEFAULT PALETTE: navy + one warm color (`academic_navy_orange`)**: `#1E3A5F`, `#C2410C`, `#94A3B8`, `#CBD5E1`, `#0F172A`.
+  - The two series the reader must compare get the two real colors: **navy `#1E3A5F`** for the key/proposed series and **burnt orange `#C2410C`** for the series it is compared against (or the one highlighted result). Baselines and references get the grays; ground truth (DFT, experiment) gets near-black.
+  - Do not draw a whole figure in blues and grays: an all-blue figure has no visible contrast and the grays cannot be told apart in print. Do not go the other way either: no "rainbow" plots mixing orange, yellow, green, pink and blue.
+  - With more than 4 comparable series, switch to Okabe-Ito (`okabe_ito_on_white`). Ordered data (concentration, temperature, time) uses one sequential ramp, not the categorical palette.
+  - Always add a non-color cue: distinct markers (`o`, `s`, `^`, `D`) and line styles (`-`, `--`, `:`), so the figure still reads in grayscale. `academic_mono_slate` remains available for grayscale-only print.
 - **Label & Annotation Anti-Collision Rules**:
   - Never let text annotations (`ax.text` / `ax.annotate` / bar value labels) cross reference lines (`axvline`/`axhline`), error bars, or axes spines. Always add sufficient `ylim`/`xlim` headroom (`12–15%` above the highest bar/error bar) and use `bbox=dict(boxstyle="round,pad=0.15", facecolor="white", edgecolor="none", alpha=0.85)` when a label sits near a grid or reference line.
 - **Always Dual-Export Editable `.svg` + `.pdf`/`.png`**:
