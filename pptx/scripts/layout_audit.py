@@ -7,7 +7,8 @@ Checks for:
 1. Table vertical auto-expansion (PowerPoint ignores `h` when cells wrap) colliding with bottom callouts or slide edge.
 2. CJK-aware text box overflow (estimating wrapped lines from box width, font size, and CJK/ASCII character widths).
 3. Text density overload (character count per slide exceeding academic readability thresholds).
-4. Micro-fonts (< 12pt on main slides, < 10.5pt in tables/appendix, excluding superscripts/subscripts/footers).
+4. Font sizes: any text < 12pt on main slides (< 10.5pt on backup slides) fails; most body text must be >= 14pt;
+   a main slide needs a title of at least 24pt. Header/footer chrome and superscripts/subscripts are excluded.
 5. Shape-to-shape / table-to-shape bounding-box collisions.
 6. "AI Card-Stacking" anti-pattern (> 14 shapes on a single slide or < 35% slides having visual figures).
 
@@ -46,6 +47,11 @@ CHAR_LIMIT_MAIN = 380
 CHAR_LIMIT_BACKUP = 600
 OVERFLOW_TOLERANCE = 1.05      # fail when estimated text height exceeds box height by >5%
 LATIN_EM = 0.58                # conservative average Latin glyph width (Arial regular ~0.52, bold ~0.58)
+MIN_ANY_PT_MAIN = 12.0          # captions and labels may go this low
+MIN_ANY_PT_BACKUP = 10.5
+MIN_BODY_PT = 14.0             # the size most body characters must reach (16-18 preferred)
+MIN_TITLE_PT = 24.0            # slide title target is 26-30pt; 24 leaves a little tolerance
+HEADER_CHROME_BOTTOM = 0.60    # shapes ending above this y (inches) are navigation chrome
 
 EMU_PER_INCH = 914400.0
 
@@ -182,6 +188,8 @@ def audit_pptx(pptx_path: Path) -> int:
 
             text_boxes = []
             min_body_pt = 999.0
+            max_pt = 0.0
+            body_runs = []  # (pt, visible chars) for paragraphs outside header/footer chrome
 
             for sp in shapes:
                 xfrm = sp.find(".//a:xfrm", NS)
@@ -215,8 +223,12 @@ def audit_pptx(pptx_path: Path) -> int:
                             szs.append(int(r.attrib["sz"]) / 100.0)
                     pt = max(szs) if szs else 12.0
                     # Ignore footer/badge when tracking minimum body font size
-                    if y < slide_h - 0.65 and len(ptxt.strip()) > 4:
+                    in_chrome = y >= slide_h - 0.65 or y + h <= HEADER_CHROME_BOTTOM
+                    if not in_chrome and len(ptxt.strip()) > 4:
                         min_body_pt = min(min_body_pt, pt)
+                        body_runs.append((pt, len("".join(ptxt.split()))))
+                    if not in_chrome and ptxt.strip():
+                        max_pt = max(max_pt, pt)
 
                     ppr = p.find("a:pPr", NS)
                     indent_w = int(ppr.attrib.get("marL", 0)) / EMU_PER_INCH if ppr is not None else 0.0
@@ -246,12 +258,27 @@ def audit_pptx(pptx_path: Path) -> int:
                             f"Slide {idx:02d}: Shape out of slide bounds ({x+w:.2f}\"×{y+h:.2f}\" > {slide_w:.2f}\"×{slide_h:.2f}\")"
                         )
 
-            min_allowed_pt = 10.5 if is_backup else 12.0
+            min_allowed_pt = MIN_ANY_PT_BACKUP if is_backup else MIN_ANY_PT_MAIN
             if min_body_pt < min_allowed_pt:
                 errors.append(
                     f"Slide {idx:02d}: Font size too small ({min_body_pt:.1f}pt < {min_allowed_pt:.1f}pt). "
                     f"Cut word count and increase font size."
                 )
+            body_chars = sum(n for _, n in body_runs)
+            if not is_backup and body_chars > 40:
+                # Titles and headings are larger, so exclude the largest size before judging the body.
+                rest = [(pt, n) for pt, n in body_runs if pt < max_pt] or body_runs
+                small = sum(n for pt, n in rest if pt < MIN_BODY_PT)
+                if small > 0.5 * sum(n for _, n in rest):
+                    errors.append(
+                        f"Slide {idx:02d}: Body text is mostly below {MIN_BODY_PT:g}pt "
+                        f"({small} of {sum(n for _, n in rest)} characters). Use 16-18pt and cut words."
+                    )
+                if max_pt < MIN_TITLE_PT:
+                    errors.append(
+                        f"Slide {idx:02d}: No title-size text (largest is {max_pt:g}pt; slide titles are 26-30pt, "
+                        f"minimum {MIN_TITLE_PT:g}pt)."
+                    )
 
             # Check tables and vertical expansion
             for gf in root.findall(".//p:graphicFrame", NS):
