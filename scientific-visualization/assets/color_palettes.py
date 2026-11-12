@@ -13,7 +13,17 @@ from __future__ import annotations
 
 from typing import Final
 
-# Monochromatic + Single-Accent Academic Slate Palette (Preferred for clean academic papers & slides)
+# Default: navy + ONE warm contrast color, grays for baselines (clean, not all-blue, not rainbow).
+# Order = importance: key series, the series it is compared against, then baselines/reference.
+ACADEMIC_NAVY_ORANGE: Final = [
+    "#1E3A5F",  # Key / proposed series (Deep Navy)
+    "#C2410C",  # Main comparison series or the highlighted result (Burnt Orange)
+    "#94A3B8",  # Baseline 1 (Medium Cool Gray)
+    "#CBD5E1",  # Baseline 2 / Reference band (Light Cool Gray)
+    "#0F172A",  # Ground truth / DFT / experiment (Near-Black)
+]
+
+# Monochromatic slate palette (kept for grayscale-only print; no longer the default)
 # Baselines use neutral cool-gray/slate steps; ONLY the proposed/key series uses deep navy (#1E3A5F).
 ACADEMIC_MONO_SLATE: Final = [
     "#1E3A5F",  # Primary / Proposed method (Deep Academic Navy)
@@ -170,6 +180,7 @@ BALOS_HBOND_SHELLS: Final = [
 ]
 
 PALETTES: Final = {
+    "academic_navy_orange": ACADEMIC_NAVY_ORANGE,
     "academic_mono_slate": ACADEMIC_MONO_SLATE,
     "pan_galli_raman": PAN_GALLI_RAMAN,
     "wang_mlff_parity": WANG_MLFF_PARITY,
