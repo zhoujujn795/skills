@@ -30,8 +30,8 @@ axes.edgecolor: "#1F2937"
 axes.labelcolor: "#1F2937"
 axes.axisbelow: True
 axes.grid: False
-# Monochromatic Academic Slate-Navy cycle (Baselines in slate/gray, Proposed/Key in #1E3A5F).
-axes.prop_cycle: cycler('color', ["#1E3A5F", "#475569", "#94A3B8", "#CBD5E1", "#0F172A"])
+# Navy + one warm contrast color; grays for baselines; near-black for ground truth.
+axes.prop_cycle: cycler('color', ["#1E3A5F", "#C2410C", "#94A3B8", "#CBD5E1", "#0F172A"])
 
 # Tick properties
 xtick.major.size: 3
