@@ -11,6 +11,7 @@ A `.pptx` is a ZIP archive of XML files. Choose your approach by task:
 | Task | Approach |
 |---|---|
 | **Create** a new deck | Write a `pptxgenjs` script — see gotchas below |
+| **Create** a 上海工程技术大学 (SUES) deck | Start from `scripts/build_sues_2025_template.py` (`python-pptx`) — see [SUES template](#5-sues-template-how-to-use-it) |
 | **Edit** an existing deck, or build from a template | unzip → edit `ppt/slides/slideN.xml` → zip |
 | **Read** content | `markitdown deck.pptx` (one block per slide under `<!-- Slide number: N -->` markers); visual grid: `python scripts/thumbnail.py deck.pptx` |
 
@@ -90,9 +91,10 @@ Keep slides simple and readable. No marketing-style decks, no card stacks, no de
 - **Neutrals**: text `1F2937`, muted text `6B7280` (citations, units, footer), rules `D1D5DB`, light fill `F4F6F9`.
 - **University Preset — 上海工程技术大学 (SUES 2025 Official New VI)**:
   - **探索蓝 (Exploration Blue, Primary)**: `0A2F99` (`RGB: 10, 47, 153`, `PANTONE 2146C`) — slide titles, header rule, table header, main plot series.
-  - **展望蓝 (Envision Blue, Monochromatic Accent)**: `2E74FF` (`RGB: 46, 116, 255`, `PANTONE 2727C`) — section tag, key highlighted metrics, secondary plot series.
-  - **Neutrals**: body ink `1B1B1B`, muted text `595959`, official cool grey rule `C7C7C7` (`PANTONE 427C`), subtle surface tint `F4F6FA`, pure white `FFFFFF`.
-  - **Bundled 2025 VI Assets & Template**: `assets/sues_2025_vi/sues_logo_blue.png` (horizontal logo), `assets/sues_2025_vi/sues_mark_blue.png` (three-rotor `SUES` emblem), `assets/sues_2025_vi/logo.svg`, `assets/sues_2025_vi/SUES_2025_Academic_Template.pptx`, and generator `scripts/build_sues_2025_template.py`.
+  - **Accent (warm, one only)**: `C2410C` (burnt orange) — the key number, the key finding, the current TOC entry. At most 1–2 elements per slide. An all-blue deck has no visible emphasis, so do not use a second blue as the accent.
+  - **展望蓝 (Envision Blue)**: `2E74FF` (`RGB: 46, 116, 255`, `PANTONE 2727C`) — secondary series in charts only. Not for text: on white it is about 4.2:1 contrast.
+  - **Neutrals**: body ink `1F2937`, muted text `595959`, official cool grey rule `C7C7C7` (`PANTONE 427C`), subtle surface tint `F4F6FA`, pure white `FFFFFF`.
+  - **Bundled assets, template and generator**: see [SUES template](#5-sues-template-how-to-use-it).
 - **Never** use a third hue on shapes or text (no green/purple/yellow pills, status boxes, or rainbow bullets). The audit fails at >2 chromatic hues.
 - **Figures and charts** may use a colorblind-safe palette (Okabe-Ito: `0072B2`, `D55E00`, `009E73`, `E69F00`, `56B4E9`, `CC79A7`, `000000`). For charts with ≤3 series prefer the primary, the accent and a gray. Add a non-color cue (line style or marker) when more than 3 series share a chart. The audit reads slide XML only, so it does not check native chart colors; review those in the render.
 
@@ -121,6 +123,23 @@ The deck is opened on both Windows and macOS, so **the font must exist on both o
 3. **Tables**: PowerPoint ignores `h` on `addTable()` as a cap and expands rows when text wraps. Never put a large figure (h > 2.5") and a table with more than 4 rows on one slide. Keep main-slide tables ≤6 rows × 6 columns at ≥12 pt, and check `table_y + wrapped height ≤ 6.3"`.
 4. **Shapes**: aim for ≤12 shapes per slide (the audit fails at >14).
 
+### 5. SUES template: how to use it
+
+For a 上海工程技术大学 talk, do not write a pptxgenjs deck from scratch and do not hand-edit the bundled `.pptx`. Generate the deck from the script, which owns the chrome (navigation bar, logo, watermark, footer, page numbers):
+
+1. Write `deck.json` with the real metadata. Keys: `title`, `subtitle`, `short_title`, `presenter`, `advisor`, `school`, `date`, `sections` (3–5 short section names). Ask the user for any you do not know; never invent a name or advisor.
+2. Copy `scripts/build_sues_2025_template.py` to the working directory as `build_deck.py` and rewrite the slide bodies in `build_deck()`. Keep the helpers (`add_textbox`, `add_paragraph`, `add_rect`, `apply_booktabs_borders`), `add_chrome()` for every content slide, and the single `add_footers()` call at the end. The seven bundled slides are the page types to reuse: cover, outline, text + figure, three columns, figure + three-line table, plan, closing.
+3. Run `python3 build_deck.py -o talk.pptx --config deck.json --assets <this skill>/assets/sues_2025_vi` (the copy no longer sits next to the logos, so `--assets` is required), then `python3 scripts/layout_audit.py talk.pptx`.
+
+Rules specific to this template:
+
+- Colors are fixed: primary `0A2F99`, accent `C2410C`, neutrals. Use the accent on at most 1–2 elements per slide.
+- Sizes come from the `SIZE_*` constants (title 28, heading 18, body 16, table 13, caption 12). Do not go below them to fit more text; cut words or split the slide.
+- The slide title is one line, at most about 26 Chinese characters, and states the conclusion.
+- The navigation bar and page numbers are generated from `sections` and the slide count. Pass the right section index to `add_chrome()`; never type a page number.
+- Fonts are `Arial` + `Microsoft YaHei`. Use plain digits (`1.`, `01`) and `•` for lists. Avoid dingbats and Unicode sub/superscripts such as `❶`, `₆`, `‡`: Arial lacks them and each platform falls back differently. For formulas use run-level subscript formatting.
+- `assets/sues_2025_vi/SUES_2025_Academic_Template.pptx` is the rendered example of this script (placeholder text only), for a user who wants to edit by hand in PowerPoint. Running the script with no arguments rebuilds it.
+
 ## QA (Required)
 
 Your first render usually has a few real issues — overlaps, overflow, misalignment. Find and fix those, re-render only the slides you changed, and stop.
@@ -133,7 +152,7 @@ Run the zero-dependency layout auditor using built-in `python3` immediately afte
 python3 scripts/layout_audit.py output.pptx   # run from this skill's directory
 ```
 
-**You are FORBIDDEN from declaring completion or uploading to Google Drive until `layout_audit.py` exits with code `0` (`Audit PASSED!`).** If it reports `[FAIL]` on any slide (more than 2 chromatic hues, disallowed fonts, table expansion collision, text-box overflow, `>380` chars, font `<12pt`, or `>14` shapes), fix the generator script and re-run until 0 errors remain.
+**You are FORBIDDEN from declaring completion or delivering the file until `layout_audit.py` exits with code `0` (`Audit PASSED!`).** If it reports `[FAIL]` on any slide (more than 2 chromatic hues, disallowed fonts, table expansion collision, text-box overflow, `>380` chars, any font `<12pt`, body text mostly `<14pt`, no title of at least 24 pt, or `>14` shapes), fix the generator script and re-run until 0 errors remain.
 
 ### Content QA
 
@@ -173,7 +192,7 @@ passes them. Every failure names its fix. Fix it in the generator and rebuild.
 
 Convert the slides to images (see [Converting to Images](#converting-to-images)) and inspect every one. After staring at the generating code you tend to see what you expect rather than what rendered, so look at the images fresh (a subagent works well for this if you have one). User-visible defects to look for:
 
-- **Text overflow or text cut off at a box or slide boundary — check this first.** It is the most common defect and always user-visible. (For a font the previewer renders unreliably per Typography, the preview is approximate: trust the ~10% slack you left, not its apparent fit.)
+- **Text overflow or text cut off at a box or slide boundary — check this first.** It is the most common defect and always user-visible. (For a font the previewer renders unreliably per Typography, the preview is approximate: trust the ≥15% slack you left, not its apparent fit.)
 - Overlapping elements (text through shapes, lines through words, stacked elements)
 - Source citations or footers colliding with content above
 - Elements too close (< 0.3" gaps) or cards/sections nearly touching
@@ -203,4 +222,4 @@ ls -1 "$PWD"/slide-*.jpg
 
 ## Dependencies
 
-`pptxgenjs` (npm, preinstalled — install only if `require('pptxgenjs')` fails) · `markitdown[pptx]`, `Pillow`, `defusedxml`, `lxml` (pip — text dump, thumbnail, clean, validate) · LibreOffice (`soffice`, auto-configured for sandboxed environments via `scripts/office/soffice.py`) · `pdftoppm` (Poppler)
+`pptxgenjs` (npm, preinstalled — install only if `require('pptxgenjs')` fails) · `python-pptx` (pip — only for `scripts/build_sues_2025_template.py`) · `markitdown[pptx]`, `Pillow`, `defusedxml`, `lxml` (pip — text dump, thumbnail, clean, validate) · LibreOffice (`soffice`, auto-configured for sandboxed environments via `scripts/office/soffice.py`) · `pdftoppm` (Poppler)
